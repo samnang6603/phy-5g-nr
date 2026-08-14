@@ -1,0 +1,3 @@
+/Users/samnangdonaan/Documents/Crazy Projects/phy-5g-nr/build/CMakeFiles/main_driver.dir
+/Users/samnangdonaan/Documents/Crazy Projects/phy-5g-nr/build/CMakeFiles/edit_cache.dir
+/Users/samnangdonaan/Documents/Crazy Projects/phy-5g-nr/build/CMakeFiles/rebuild_cache.dir
