@@ -12,16 +12,16 @@
 int main(void) {
     std::cout << "Hello World! " << std::tan(M_PI/4) << std::endl;
 
-    std::vector<bool> v;
-    v.push_back(true);
-    v.push_back(false);
-    v.push_back(true);
-    v.push_back(false);
-    v.push_back((false));
+    std::vector<uint8_t> b{1,1,0,0,1,0};
 
-    std::vector<std::complex<float>> bpsk_out(5,0);
+    std::vector<std::complex<float>> bpsk_out(b.size(),0);
 
-    common::modulation::bpsk(bpsk_out, v);
+    std::size_t M = 4;
+
+    std::vector<std::complex<float>> qpsk_out(b.size()/std::log2f(static_cast<float>(M)),0);
+
+
+    std::cout << "Simulation Done!" << std::endl;
 
 
     return 0;

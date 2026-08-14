@@ -77,10 +77,13 @@ set_target_properties(zlog::zlog PROPERTIES
 )
 
 # -----------------------------------------------------------------------------
-# Target -- replace main.cpp with your actual sources
+# Target
 # -----------------------------------------------------------------------------
 add_executable(${PROJECT_NAME}
     src/common/symbols_modulation/symbols_modulation.cpp
+    src/common/symbols_modulation/symbols_modulation_psk.cpp
+    src/common/symbols_modulation/symbols_modulation_qam.cpp
+    src/utils/utils.cpp
     main_driver.cpp
 )
 

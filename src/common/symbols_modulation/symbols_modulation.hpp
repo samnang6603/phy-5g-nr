@@ -1,11 +1,29 @@
+#pragma once
+
+#include <array>
+#include <cmath>
 #include <complex>
+#include <stdexcept>
 #include <vector>
+#include <span>
+#include "psk_lut.hpp"
+#include "../../nr5g_common.hpp"
+#include "../../utils/utils.hpp"
+
 
 namespace common {
     namespace modulation {
 
-        void bpsk(std::vector<std::complex<float>>& y, const std::vector<bool>& x);
-        void qpsk(std::vector<std::complex<float>>& y, const std::vector<bool>& x);
-        void qam(std::vector<std::complex<float>>& y, const std::vector<bool>& x);
+        void modulate(
+            std::vector<std::complex<float>>& y,
+            const std::vector<uint8_t>& x,
+            const common::modulation::modulationType modType
+        );
+
+        void modulateBPSK(std::vector<std::complex<float>>& y, const std::vector<uint8_t>& x);
+        void modulateQPSK(std::vector<std::complex<float>>& y, const std::vector<uint8_t>& x, const float phaseOffset);
+        void modulate8PSK(std::vector<std::complex<float>>& y, const std::vector<uint8_t>& x, const float phaseOffset);        
+
+
     }
 }
