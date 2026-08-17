@@ -25,5 +25,5 @@ namespace common {
         void modulate8PSK(std::vector<std::complex<float>>& y, const std::vector<uint8_t>& x, const float phaseOffset);        
 
 
-    }
-}
+    } // namespace modulation
+} // namespace common

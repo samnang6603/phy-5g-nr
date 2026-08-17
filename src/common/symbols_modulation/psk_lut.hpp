@@ -3,7 +3,7 @@
 #include <array>
 #include <complex>
 
-constexpr float invSqrt2 = 0.7071067811865475244f;
+constexpr float INV_SQRT2 = 0.7071067811865475244f;
 
 /*
  * LUTs are indexed by the packed binary value of the input bits.
@@ -29,12 +29,14 @@ constexpr float invSqrt2 = 0.7071067811865475244f;
  *   index 2 -> 10 -> 270 deg
  *   index 3 -> 11 -> 180 deg
  */
-constexpr std::array<std::complex<float>, 4> qpsk_constellation_lut = {{
-    { 1.0f,  0.0f},
-    { 0.0f,  1.0f},
-    { 0.0f, -1.0f},
-    {-1.0f,  0.0f}
-}};
+constexpr std::array<std::complex<float>, 4> QPSK_CONSTELLATION_LUT = {
+    {
+        { 1.0f,  0.0f},
+        { 0.0f,  1.0f},
+        { 0.0f, -1.0f},
+        {-1.0f,  0.0f}
+    }
+};
 
 /*
  * 8-PSK Gray mapping around the unit circle:
@@ -59,13 +61,15 @@ constexpr std::array<std::complex<float>, 4> qpsk_constellation_lut = {{
  *   110 -> 6
  *   111 -> 7
  */
-constexpr std::array<std::complex<float>, 8> psk8_constellation_lut = {{
-    { 1.0f,      0.0f     },   // 000
-    { invSqrt2,  invSqrt2 },   // 001
-    {-invSqrt2,  invSqrt2 },   // 010
-    { 0.0f,      1.0f     },   // 011
-    { invSqrt2, -invSqrt2 },   // 100
-    { 0.0f,     -1.0f     },   // 101
-    {-1.0f,      0.0f     },   // 110
-    {-invSqrt2, -invSqrt2 }    // 111
-}};
+constexpr std::array<std::complex<float>, 8> PSK8_CONSTELLATION_LUT = {
+    {
+        { 1.0f,      0.0f     },   // 000
+        { INV_SQRT2,  INV_SQRT2 },   // 001
+        {-INV_SQRT2,  INV_SQRT2 },   // 010
+        { 0.0f,      1.0f     },   // 011
+        { INV_SQRT2, -INV_SQRT2 },   // 100
+        { 0.0f,     -1.0f     },   // 101
+        {-1.0f,      0.0f     },   // 110
+        {-INV_SQRT2, -INV_SQRT2 }    // 111
+    }
+};

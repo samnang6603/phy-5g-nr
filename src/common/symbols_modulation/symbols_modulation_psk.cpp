@@ -22,8 +22,6 @@ namespace common {
             }
         }
 
-        /************************* Public functions ***********************/
-
         void modulateBPSK(std::vector<std::complex<float>>& y,
                           const std::vector<uint8_t>& x)
         {
@@ -52,7 +50,7 @@ namespace common {
 
             std::array<std::complex<float>, M> constellation;
 
-            rotateConstellation(constellation, qpsk_constellation_lut, phaseOffset);
+            rotateConstellation(constellation, QPSK_CONSTELLATION_LUT, phaseOffset);
 
             y.resize(x.size()/bitsPerSymbol);
 
@@ -77,7 +75,7 @@ namespace common {
 
             std::array<std::complex<float>, M> constellation;
 
-            rotateConstellation(constellation, psk8_constellation_lut, phaseOffset);
+            rotateConstellation(constellation, PSK8_CONSTELLATION_LUT, phaseOffset);
 
             y.resize(x.size()/bitsPerSymbol);
 

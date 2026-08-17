@@ -12,13 +12,15 @@
 int main(void) {
     std::cout << "Hello World! " << std::tan(M_PI/4) << std::endl;
 
-    std::vector<uint8_t> b{1,1,0,0,1,0};
+    std::vector<uint8_t> b{1,1,0,0,1,0,1,1};
 
     std::vector<std::complex<float>> bpsk_out(b.size(),0);
 
     std::size_t M = 4;
 
     std::vector<std::complex<float>> qpsk_out(b.size()/std::log2f(static_cast<float>(M)),0);
+
+    common::modulation::modulateQPSK(qpsk_out, b, 0);
 
 
     std::cout << "Simulation Done!" << std::endl;
