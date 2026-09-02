@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "macOS-Clang-ARM64",
+            "compilerPath": "/usr/bin/clang++",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "cStandard": "c17",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "macos-clang-arm64",
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "__APPLE__",
+                "__MACH__"
+            ]
+        }
+    ],
+    "version": 4
+}

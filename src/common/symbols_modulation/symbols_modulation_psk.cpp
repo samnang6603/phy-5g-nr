@@ -55,7 +55,7 @@ namespace common {
             y.resize(x.size()/bitsPerSymbol);
 
             for (std::size_t i = 0; i < y.size(); ++i) {
-                const uint16_t sym = utils::packBits(&x[i*bitsPerSymbol], bitsPerSymbol);
+                const uint16_t sym = utils::binary_arithmetic::packBits(&x[i*bitsPerSymbol], bitsPerSymbol);
                 y[i] = constellation[sym];
             }
         }
@@ -80,7 +80,7 @@ namespace common {
             y.resize(x.size()/bitsPerSymbol);
 
             for (std::size_t i = 0; i < y.size(); ++i) {
-                const uint16_t sym = utils::packBits(&x[i*bitsPerSymbol], bitsPerSymbol);
+                const uint16_t sym = utils::binary_arithmetic::packBits(&x[i*bitsPerSymbol], bitsPerSymbol);
                 y[i] = constellation[sym];
             }
         }

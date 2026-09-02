@@ -4,8 +4,7 @@
         {
             "label": "cmake-build-debug",
             "type": "shell",
-            "command": "cmake",
-            "args": ["--build", "build"],
+            "command": "./build_5g_nr_sim.sh",
             "group": {
                 "kind": "build",
                 "isDefault": true
