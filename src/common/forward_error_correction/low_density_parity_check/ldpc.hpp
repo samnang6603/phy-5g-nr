@@ -6,9 +6,11 @@
 
 namespace common::fec::ldpc {
 
+    enum BGN {BG1=1, BG2};
+
     class nrLDPC {
     public:
-        nrLDPC(uint64_t M, uint64_t rate);
+        nrLDPC(const uint64_t M, const float rate);
         ~nrLDPC();
 
     private:
@@ -21,14 +23,15 @@ namespace common::fec::ldpc {
         uint64_t N_ = 0;       // coded output length
         uint64_t n_F_ = 0;     // number of filler bits
 
-        std::vector<uint16_t> edges_;
-        std::vector<uint16_t> shifts_;
-        std::vector<uint16_t> layers_;
+        std::vector<uint16_t> edges_;  // shift connections from check nodes to variable nodes  
+        std::vector<uint16_t> shifts_; // shifts for each correponding edge
+        std::vector<uint16_t> layers_; // each layer is defined by edges which  the corresponding check node and  varible nodes) 
+                                       // specified by start edge index and number of edges
     };
 
     std::vector<uint8_t> ldpc_encode(
         const common::fec::ldpc::nrLDPC ldpc_conf, 
-        std::vector<uint8_t>& msg
+        const std::vector<uint8_t>& msg
     );
     
 }
