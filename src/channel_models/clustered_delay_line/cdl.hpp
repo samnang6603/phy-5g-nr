@@ -1,90 +1,101 @@
 #pragma once
 
-#include <vector>
 #include <array>
-#include <string>
 #include <cmath>
+#include <cstdint>
 #include <optional>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "../../nr5g_common.hpp"
 #include "antenna_structure/antenna_structure.hpp"
 
-/******************* Constants ***************************/
-static constexpr uint8_t NUMBER_OF_RAYS = 20;
+static constexpr std::uint8_t NUMBER_OF_RAYS = 20;
 
-/***************** Type Definitions **********************/
 namespace channels::cdl {
-    
+
     enum class PDP { CDL_A, CDL_B, CDL_C, CDL_D, CDL_E };
 
+    enum class ChannelResponseOutputType {
+        PATH_GAINS,
+        OFDM_RESPONSE
+    };
+
     struct MeanAnglesList {
-        float AoD = 0.0f; // mean azimuth of departure angles after scaling
-        float AoA = 0.0f; // mean azimuth of arrival angles after scaling
-        float ZoD = 0.0f; // mean zenith of departure angles after scaling
-        float ZoA = 0.0f; // mean zenith of arrival angles after scaling
+        float AoD = 0.0f;
+        float AoA = 0.0f;
+        float ZoD = 0.0f;
+        float ZoA = 0.0f;
     };
 
     class nrCDLChannel {
     public:
-        struct KFactorScalingConfig {
-            float KFactor = 9.0f;
-        };
-
-        struct AngleScalingConfig {
-            MeanAnglesList MeanAngles{};
-        };
-
-        struct Config {
+        struct DelayProfileConfig {
             PDP DelayProfile = PDP::CDL_A;
             float DelaySpread = 3E-8f;
 
-            // If nullopt, K-factor scaling is disabled
-            std::optional<KFactorScalingConfig> KFactorScaling;
+            // nullopt means disabled
+            std::optional<float> KFactor;
 
-            // If nullopt, angle scaling is disabled
-            std::optional<AngleScalingConfig> AngleScaling;
+            // nullopt means angle scaling disabled
+            std::optional<MeanAnglesList> MeanAngles;
         };
 
-    public:
-        nrCDLChannel()
-            : config_{} {
-            validateOrThrow(config_);
-        }
+        struct MobilityConfig {
+            float MaximumDopplerShift = 5.0f;
+            float MovingScattererProportion = 0.2f;
+        };
 
-        explicit nrCDLChannel(Config config)
-            : config_{config} {
-            validateOrThrow(config_);
-        }
+        struct RandomStreamConfig {
+            std::uint32_t Seed = 1;
+        };
 
-        const Config& config() const noexcept {
-            return config_;
-        }
+        struct ChannelFilteringConfig {
+            uint64_t FilterDelay = 7;               // samples
+            float StopbandAttenuation = 70.0f;     // dB
+            float MaxFractionalDelayError = 0.01f;
+        };
 
-        void configure(Config config) {
-            validateOrThrow(config);
-            config_ = config;
-        }
+        struct ChannelControlConfig {
+            float SampleRate = 30720000.0f;
+            float InitialTime = 0.0f;
+            float SampleDensity = 64.0f;
+
+            bool NormalizeChannelOutput = true;
+            bool NormalizePathGains = true;
+
+            ChannelResponseOutputType ChannelResponseOutput =
+                ChannelResponseOutputType::PATH_GAINS;
+
+            std::uint64_t NumTimeSamples = 30720;
+
+            // nullopt means channel filtering disabled
+            std::optional<ChannelFilteringConfig> ChannelFiltering;
+        };
+
+        struct Config {
+            DelayProfileConfig DelayProfile;
+            MobilityConfig Mobility;
+            RandomStreamConfig RandomStream;
+            ChannelControlConfig ChannelControl;
+        };
+
+        nrCDLChannel();
+
+        explicit nrCDLChannel(const Config& config);
+
+        const Config& config() const noexcept;
+        
+        void configure(const Config& config);
 
     private:
         Config config_;
+        std::mt19937 rng_;
+        float currentTime_ = 0.0f;
 
     private:
-        static constexpr bool supportsKFactorScaling(PDP pdp) noexcept {
-            return pdp == PDP::CDL_D || pdp == PDP::CDL_E;
-        }
-
-        static void validateOrThrow(const Config& config) {
-            if (config.DelaySpread <= 0.0f) {
-                throw std::invalid_argument("nrCDLChannel >>> DelaySpread must be positive.");
-            }
-
-            if (config.KFactorScaling.has_value() &&
-                !supportsKFactorScaling(config.DelayProfile)) {
-                throw std::invalid_argument(
-                    "nrCDLChannel >>> KFactorScaling is only valid for CDL_D and CDL_E."
-                );
-            }
-        }
+        static void validateOrThrow(const Config& config);
     };
-
 }

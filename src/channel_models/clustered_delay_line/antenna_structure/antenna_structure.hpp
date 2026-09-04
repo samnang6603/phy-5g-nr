@@ -35,8 +35,20 @@ namespace channels::cdl {
         float gamma = 0.0f;
     };
 
-    enum class ElementPattern { TR_38_901, ISOTROPIC };
-    enum class PolarizationModel { MODEL1 = 1, MODEL2 };
+    enum class ElementPattern { 
+        TR_38_901, 
+        ISOTROPIC 
+    };
+    
+    enum class PolarizationModel { 
+        MODEL1 = 1, 
+        MODEL2 
+    };
+
+    struct AntennaLayout {
+
+    };
+
 
     struct AntennaArray {
         Size struct_size;
@@ -46,5 +58,4 @@ namespace channels::cdl {
         ElementPattern element = ElementPattern::TR_38_901;
         PolarizationModel pol_model = PolarizationModel::MODEL2;
     };
-
 }
