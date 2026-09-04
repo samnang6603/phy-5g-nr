@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <stdexcept>
 #include <cmath>
 #include <vector>
 #include <complex>

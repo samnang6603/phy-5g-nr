@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../../../nr5g_common.hpp"
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 #include "cblas.h"
+#include "../../../nr5g_common.hpp"
+
 
 static constexpr uint8_t BG1_LAYER_ROWS = 46;
 static constexpr uint8_t BG2_LAYER_ROWS = 42;
@@ -70,6 +71,8 @@ namespace common::fec::ldpc {
             assert(valid_msg_size);
             const bool valid_eqn_par  = n_eqn == n_par_chunks;
             assert(valid_eqn_par);
+
+            
 
             
 

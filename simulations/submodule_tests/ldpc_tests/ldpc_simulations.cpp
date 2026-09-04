@@ -1,7 +1,7 @@
 #include <string>
 #include "ldpc_tests.hpp"
 #include "../../../src/utils/utils.hpp"
-#include "../../../src/common/forward_error_correction/low_density_parity_check/ldpc.hpp"
+#include "../../../src/common/fec/ldpc/ldpc.hpp"
 
 
 namespace common::fec::ldpc {

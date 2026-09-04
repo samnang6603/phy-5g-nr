@@ -81,7 +81,7 @@ set_target_properties(zlog::zlog PROPERTIES
 # -----------------------------------------------------------------------------
 add_executable(${PROJECT_NAME}
     simulations/submodule_tests/ldpc_tests/ldpc_simulations.cpp
-    src/common/forward_error_correction/low_density_parity_check/ldpc.cpp
+    src/common/fec/ldpc/ldpc.cpp
     src/common/symbols_modulation/symbols_modulation.cpp
     src/common/symbols_modulation/symbols_modulation_psk.cpp
     src/common/symbols_modulation/symbols_modulation_qam.cpp
