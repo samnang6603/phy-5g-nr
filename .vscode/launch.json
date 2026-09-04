@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/build/main_driver",
             "args": [],
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceRoot}/build",
             "stopOnEntry": false,
             "preLaunchTask": "cmake-build-debug",
             "sourceLanguages": [

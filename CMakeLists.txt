@@ -89,6 +89,21 @@ add_executable(${PROJECT_NAME}
     main_driver.cpp
 )
 
+add_custom_command(TARGET main_driver POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/simulations/submodule_tests/ldpc_tests/input_bin_files
+        $<TARGET_FILE_DIR:main_driver>/input_bin_files
+)
+
+add_test(
+    NAME ldpc_simulation
+    COMMAND main_driver
+)
+
+set_tests_properties(ldpc_simulation PROPERTIES
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:main_driver>
+)
+
 target_compile_options(${PROJECT_NAME} PRIVATE 
     -Wall -Wextra
 )

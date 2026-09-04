@@ -1,5 +1,7 @@
 #include "ldpc.hpp"
 #include "ldpc_lut.hpp"
+#include <stdexcept>
+#include <vector>
 
 /********************** Constants ************************/
 static constexpr uint64_t BG_SELECTION_A_THRESHOLD_1 = 292;
@@ -8,11 +10,10 @@ static constexpr uint64_t BG2_MAX_A = 3840;
 static constexpr uint64_t BG1_MAX_A = 8448;
 static constexpr float BG_SELECTION_R_THRESHOLD_1 = 0.25f;
 static constexpr float BG_SELECTION_R_THRESHOLD_2 = 0.67f;
-static constexpr uint64_t ZC_MAX = 384;
 static constexpr uint8_t BG_SHIFT_TABLE_NUM_COL = 10;
 static constexpr uint8_t BG_LAYER_COL = 2;
-static constexpr uint8_t BG1_LAYER_ROW = 46;
-static constexpr uint8_t BG2_LAYER_ROW = 42;
+static constexpr uint64_t ZC_MAX = 384;
+
 
 /*********************** Alias ****************************/
 using ShiftTableCol = std::array<uint16_t, BG_SHIFT_TABLE_NUM_COL>;
@@ -21,14 +22,14 @@ namespace common::fec::ldpc {
 
     /******************* Function Declarations **************************/
     static BGN select_base_graph(const uint64_t A, const float R);
-    static uint8_t select_Kb(const uint8_t BGn, const uint64_t A);
+    static uint8_t select_Kb(const BGN BGn, const uint64_t A);
     static void select_lift_size_set_idx(
         uint16_t& Zc, 
         uint8_t& set_idx, 
         const uint64_t A,
         const uint8_t Kb
     );
-    static void select_edges_and_shifts_lut(
+    static void setup_edges_and_shifts_lut(
         std::vector<uint16_t>& edges,
         std::vector<uint16_t>& shifts,
         const BGN BGn,
@@ -42,21 +43,33 @@ namespace common::fec::ldpc {
     );
 
     /********************* Class constructor ******************************/
-    nrLDPC::nrLDPC(const uint64_t M, const float R) {
+    nrLDPC::nrLDPC(const uint64_t M, const float R) 
+        : A_(static_cast<uint64_t>(M*R)) {
 
-        M_ = M;
-        A_ = M*R;
+        BGn_ = select_base_graph(A_, R);
+        const uint8_t kb = select_Kb(BGn_, A_);
+        select_lift_size_set_idx(Zc_, set_idx_, A_, kb);
 
-    }
+        switch (BGn_) {
+            case BGN::BG1:
+                K_ = Zc_*BG1_MSG_CHUNKS;
+                N_ = Zc_*BG1_ALL_CHUNKS;
+                break;
+            
+            case BGN::BG2:
+                K_ = Zc_*BG2_MSG_CHUNKS;
+                N_ = Zc_*BG2_ALL_CHUNKS;
+                break;
+            
+            default:
+                throw std::runtime_error(
+                    "nrLDPC::nrLDPC >>> K_N_calculations : Invalid base graph"
+                );
+        }
 
-    std::vector<uint8_t> ldpc_encode(
-        const common::fec::ldpc::nrLDPC ldpc_conf, 
-        const std::vector<uint8_t>& msg
-    ) {
-        // LDPC Encodes msg using ldpc_conf configurations
-
-        // To be implemented later
-
+        n_F_ = K_ - A_;
+        setup_edges_and_shifts_lut(edges_, shifts_, BGn_, Zc_, set_idx_);
+        setup_layer(layers_,edges_,BGn_);
     }
 
     /******************* Helper functions **************************/
@@ -71,25 +84,25 @@ namespace common::fec::ldpc {
         ) {
             if (A > BG2_MAX_A) {
                 throw std::runtime_error(
-                    "LDPC BG2 requires segmentation for A > 3840"
+                    "nrLDPC::select_base_graph >>> BG2 requires segmentation for A > 3840"
                 );
             }
-            return BG2;
+            return BGN::BG2;
         }
 
         if (A > BG1_MAX_A) {
             throw std::runtime_error(
-                "LDPC BG1 requires segmentation for A > 8448"
+                "nrLDPC::select_base_graph >>> BG1 requires segmentation for A > 8448"
             );
         }
 
-        return BG1;
+        return BGN::BG1;
     }
 
     static uint8_t select_Kb(const BGN BGn, const uint64_t A) {
         // Select Kb from 3GPP 38.212 section 5.2.2
 
-        if (BGn == BG1) {
+        if (BGn == BGN::BG1) {
             return 22;
         } else {
             if (A > 640) {
@@ -102,7 +115,7 @@ namespace common::fec::ldpc {
                 return 6;
             }
         }
-        throw("Kb not selected");
+        throw std::runtime_error("nrLDPC::select_Kb >>> Kb not selected");
     }
 
     static void select_lift_size_set_idx(
@@ -114,12 +127,14 @@ namespace common::fec::ldpc {
         // Select lifting size Zc and set index from 3GPP Table 5.3.2-1
 
         // initiate a candidate Zc
-        uint16_t Zc_tmp = LIFTING_SETS[0][0];
-
+        Zc = ZC_MAX;
+        uint64_t Zc_tmp;
+        
         for (std::size_t i = 0; i < LIFTING_SETS.size(); ++i) {
 
             for (std::size_t j = 0; j < LIFTING_SETS[i].size(); ++j) {
 
+                Zc_tmp = LIFTING_SETS[i][j];
                 const uint64_t tmp = static_cast<uint64_t>(Kb)*static_cast<uint64_t>(Zc_tmp);
                 if (tmp == A) {
                     Zc = Zc_tmp;
@@ -129,15 +144,17 @@ namespace common::fec::ldpc {
                     if (Zc_tmp < Zc) {
                         Zc = Zc_tmp;
                         set_idx = i;
-                        return;
                     }
                 }
-                throw("Zc not selected");
             }
         }
+
+        //throw std::runtime_error(
+        //    "nrLDPC::select_lift_size_set_idx >> Zc not selected"
+        //);
     }
 
-    static void select_edges_and_shifts_lut(
+    static void setup_edges_and_shifts_lut(
         std::vector<uint16_t>& edges,
         std::vector<uint16_t>& shifts,
         const BGN BGn,
@@ -155,18 +172,20 @@ namespace common::fec::ldpc {
         std::size_t num_rows = 0;
 
         switch (BGn) {
-            case BG1:
+            case BGN::BG1:
                 table = BG1_SHIFT_TABLE.data();
                 num_rows = BG1_SHIFT_TABLE.size();
                 break;
 
-            case BG2:
+            case BGN::BG2:
                 table = BG2_SHIFT_TABLE.data();
                 num_rows = BG2_SHIFT_TABLE.size();
                 break;
 
             default:
-                throw std::runtime_error("Invalid base shifts and edges LUT");
+                throw std::runtime_error(
+                    "nrLDPC::select_edges_and_shifts_lut >>> Invalid base shifts and edges LUT"
+                );
         }
 
         // The *2 because the edges house row and column index of the coeffcients in
@@ -194,20 +213,21 @@ namespace common::fec::ldpc {
         uint8_t num_layer_row;
 
         switch (BGn) {
-            case BG1:
-                num_layer_row = BG1_LAYER_ROW;
-                layers.resize(BG_LAYER_COL*num_layer_row);
+            case BGN::BG1:
+                num_layer_row = BG1_LAYER_ROWS;
                 break;
 
-            case BG2:
-                num_layer_row = BG2_LAYER_ROW;
-                layers.resize(BG_LAYER_COL*num_layer_row);
+            case BGN::BG2:
+                num_layer_row = BG2_LAYER_ROWS;
                 break;
 
             default:
-                throw("Invalid base graph for layer setup");
+                throw std::runtime_error(
+                    "nrLDPC::setup_layer >>> Invalid base graph for layer setup"
+                );
         }
 
+        layers.resize(BG_LAYER_COL*num_layer_row);
         std::size_t jLayer = 0;
         std::size_t iEdge = 0;
 
@@ -223,10 +243,8 @@ namespace common::fec::ldpc {
                     break;
                 }
             }
-
             ++jLayer;
             
         } while (iEdge < num_edge_row);
-
     }
 }

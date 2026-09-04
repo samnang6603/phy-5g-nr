@@ -8,6 +8,8 @@
 #include <cblas.h>
 #include "src/common/symbols_modulation/symbols_modulation.hpp"
 
+#include "simulations/submodule_tests/ldpc_tests/ldpc_tests.hpp"
+
 
 int main(void) {
     std::cout << "Hello World! " << std::tan(M_PI/4) << std::endl;
@@ -21,6 +23,8 @@ int main(void) {
     std::vector<std::complex<float>> qpsk_out(b.size()/std::log2f(static_cast<float>(M)),0);
 
     common::modulation::modulateQPSK(qpsk_out, b, 0);
+
+    common::fec::ldpc::runSimulation1();
 
 
     std::cout << "Simulation Done!" << std::endl;

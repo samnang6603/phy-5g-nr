@@ -6,6 +6,7 @@
 #include <array>
 #include <fftw3.h>
 #include <zlog.h>
+#include <cassert>
 
 namespace common {
     namespace modulation {
@@ -15,7 +16,8 @@ namespace common {
     namespace fec {
         namespace ldpc {
             namespace encoder {
-                enum class baseGraph {BG1, BG2};
+                
+            
             }
             namespace decoder {
                 enum class algorithm {BELIEF_PROPAGATION, MIN_SUM};
