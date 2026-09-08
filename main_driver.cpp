@@ -6,6 +6,7 @@
 #include <fftw3.h>
 #include <zlog.h>
 #include <cblas.h>
+#include "simulations/channel_tests/cdl_tests/cdl_simulations.hpp"
 #include "src/common/symbols_modulation/symbols_modulation.hpp"
 
 #include "simulations/submodule_tests/ldpc_tests/ldpc_tests.hpp"
@@ -24,7 +25,9 @@ int main(void) {
 
     common::modulation::modulateQPSK(qpsk_out, b, 0);
 
-    common::fec::ldpc::runSimulation1();
+    //common::fec::ldpc::runSimulation1();
+
+    channels::cdl::runSimulation1();
 
 
     std::cout << "Simulation Done!" << std::endl;

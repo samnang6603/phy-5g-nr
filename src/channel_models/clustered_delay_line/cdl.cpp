@@ -23,13 +23,15 @@ namespace channels::cdl {
         return config_;
     }
 
-    void nrCDLChannel::configure(const Config& config) {
+    void nrCDLChannel::configure(Config& config) {
 
         validateOrThrow(config);
 
         config_ = config;
         rng_.seed(config_.RandomStream.Seed);
         currentTime_ = config_.ChannelControl.InitialTime;
+
+        antenna::arrangeStructure(config.AntennaArraySetup);
     }
 
     void nrCDLChannel::validateOrThrow(const Config& config) {

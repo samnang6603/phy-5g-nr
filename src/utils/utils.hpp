@@ -60,7 +60,11 @@ namespace utils {
 
             return data;
         }
+    }
 
-        
+    namespace float_arithmetic {
+
+        float calculateMeans(std::vector<float> x);
+
     }
 }

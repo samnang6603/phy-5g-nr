@@ -80,6 +80,7 @@ namespace channels::cdl {
             MobilityConfig Mobility;
             RandomStreamConfig RandomStream;
             ChannelControlConfig ChannelControl;
+            antenna::AntennaArray AntennaArraySetup;
         };
 
         nrCDLChannel();
@@ -88,7 +89,7 @@ namespace channels::cdl {
 
         const Config& config() const noexcept;
         
-        void configure(const Config& config);
+        void configure(Config& config);
 
     private:
         Config config_;

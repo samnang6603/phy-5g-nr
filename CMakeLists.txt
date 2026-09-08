@@ -80,20 +80,23 @@ set_target_properties(zlog::zlog PROPERTIES
 # Target
 # -----------------------------------------------------------------------------
 add_executable(${PROJECT_NAME}
+    simulations/channel_tests/cdl_tests/cdl_simulations.cpp
     simulations/submodule_tests/ldpc_tests/ldpc_simulations.cpp
     src/common/fec/ldpc/ldpc.cpp
     src/common/symbols_modulation/symbols_modulation.cpp
     src/common/symbols_modulation/symbols_modulation_psk.cpp
     src/common/symbols_modulation/symbols_modulation_qam.cpp
+    src/channel_models/clustered_delay_line/cdl.cpp
+    src/channel_models/clustered_delay_line/antenna_structure/antenna_structure.cpp
     src/utils/utils.cpp
     main_driver.cpp
 )
 
-add_custom_command(TARGET main_driver POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/simulations/submodule_tests/ldpc_tests/input_bin_files
-        $<TARGET_FILE_DIR:main_driver>/input_bin_files
-)
+#add_custom_command(TARGET main_driver POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E copy_directory
+#        ${CMAKE_CURRENT_SOURCE_DIR}/simulations/submodule_tests/ldpc_tests/input_bin_files
+#        $<TARGET_FILE_DIR:main_driver>/input_bin_files
+#)
 
 add_test(
     NAME ldpc_simulation

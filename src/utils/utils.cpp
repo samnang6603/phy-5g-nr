@@ -30,4 +30,19 @@ namespace utils {
         }
     }
 
+    namespace float_arithmetic {
+
+        float calculateMeans(std::vector<float> x) {
+
+            float sum;
+            for (const auto& v : x) {
+                sum += v;
+            }
+
+            return sum/x.size();
+
+        }
+
+    }
+
 }

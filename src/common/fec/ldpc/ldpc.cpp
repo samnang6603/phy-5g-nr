@@ -14,7 +14,6 @@ static constexpr uint8_t BG_SHIFT_TABLE_NUM_COL = 10;
 static constexpr uint8_t BG_LAYER_COL = 2;
 static constexpr uint64_t ZC_MAX = 384;
 
-
 /*********************** Alias ****************************/
 using ShiftTableCol = std::array<uint16_t, BG_SHIFT_TABLE_NUM_COL>;
 
