@@ -10,38 +10,21 @@
 #include <vector>
 
 #include "../../nr5g_common.hpp"
+#include "pdp/cdl_pdp.hpp"
 #include "antenna_structure/antenna_structure.hpp"
 
 static constexpr std::uint8_t NUMBER_OF_RAYS = 20;
 
 namespace channels::cdl {
 
-    enum class PDP { CDL_A, CDL_B, CDL_C, CDL_D, CDL_E };
 
     enum class ChannelResponseOutputType {
         PATH_GAINS,
         OFDM_RESPONSE
     };
 
-    struct MeanAnglesList {
-        float AoD = 0.0f;
-        float AoA = 0.0f;
-        float ZoD = 0.0f;
-        float ZoA = 0.0f;
-    };
-
     class nrCDLChannel {
     public:
-        struct DelayProfileConfig {
-            PDP DelayProfile = PDP::CDL_A;
-            float DelaySpread = 3E-8f;
-
-            // nullopt means disabled
-            std::optional<float> KFactor;
-
-            // nullopt means angle scaling disabled
-            std::optional<MeanAnglesList> MeanAngles;
-        };
 
         struct MobilityConfig {
             float MaximumDopplerShift = 5.0f;
@@ -76,11 +59,12 @@ namespace channels::cdl {
         };
 
         struct Config {
-            DelayProfileConfig DelayProfile;
+            pdp::DelayProfileConfig DelayProfile;
             MobilityConfig Mobility;
             RandomStreamConfig RandomStream;
             ChannelControlConfig ChannelControl;
-            antenna::AntennaArray AntennaArraySetup;
+            antenna::AntennaArrayConfig TransmitAntennaArraySetup;
+            antenna::AntennaArrayConfig ReceiveAntennaArraySetup;
         };
 
         nrCDLChannel();
@@ -89,14 +73,19 @@ namespace channels::cdl {
 
         const Config& config() const noexcept;
         
-        void configure(Config& config);
+        void configure(const Config& config);
+
+        void advance();
+
+    private:
+        void initializeChannel();
+        static void validateOrThrow(const Config& config);
 
     private:
         Config config_;
         std::mt19937 rng_;
         float currentTime_ = 0.0f;
 
-    private:
-        static void validateOrThrow(const Config& config);
+    
     };
 }

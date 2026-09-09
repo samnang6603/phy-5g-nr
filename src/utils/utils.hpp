@@ -3,11 +3,25 @@
 #include <cmath>
 #include <vector>
 #include <complex>
+#include <numbers>
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include "../nr5g_common.hpp"
+
+/***************** Constants ************************/
+constexpr float KDEG2RAD = std::numbers::pi_v<float>/180.0f;
+constexpr float DEG2RAD(float degrees) {
+    return degrees*KDEG2RAD;
+}
+constexpr float LOG10_TOLERANCE = 300.0f;
+constexpr float POW2DB(float x) {
+    return (10.0f*std::log10(x) + LOG10_TOLERANCE) - LOG10_TOLERANCE;
+}
+constexpr float DB2POW(float x) {
+    return std::pow(10.0f,x*0.1f);
+}
 
 namespace utils {
 

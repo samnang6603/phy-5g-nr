@@ -88,6 +88,8 @@ add_executable(${PROJECT_NAME}
     src/common/symbol_modulator/qam.cpp
     src/channel_models/clustered_delay_line/cdl.cpp
     src/channel_models/clustered_delay_line/antenna_structure/antenna_structure.cpp
+    src/channel_models/clustered_delay_line/antenna_structure/antenna_field_effect.cpp
+    src/channel_models/clustered_delay_line/pdp/cdl_pdp.cpp
     src/utils/utils.cpp
     main_driver.cpp
 )
