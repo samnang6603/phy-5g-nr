@@ -1,4 +1,4 @@
-#include "symbols_modulation.hpp"
+#include "symbol_modulator.hpp"
 
 namespace common {
     namespace modulation {

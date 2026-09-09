@@ -6,6 +6,7 @@
 #include <vector>
 #include <complex>
 #include <array>
+#include <algorithm>
 #include <fftw3.h>
 #include <zlog.h>
 #include <cassert>

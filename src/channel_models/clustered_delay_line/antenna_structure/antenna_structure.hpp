@@ -18,8 +18,18 @@ namespace channels::cdl::antenna {
         uint16_t P = 2;  // number of polarizations (1 or 2)
         uint16_t Mg = 1; // number of row of array panels
         uint16_t Ng = 1; // number of col of array panels
-        uint16_t num_antennas = M*N*Mg*Ng;
-        uint16_t num_antenna_ports = num_antennas*P;
+
+        std::size_t num_antennas() const noexcept {
+            return static_cast<std::size_t>(M)*N*Mg*Ng;
+        }
+
+        std::size_t num_antenna_ports() const noexcept {
+            return num_antennas()*P;
+        }
+
+        std::size_t num_spatial_values() const noexcept {
+            return NUM_3D_AXIS*num_antenna_ports();
+        }
     };
 
     struct Spacing {
@@ -33,6 +43,10 @@ namespace channels::cdl::antenna {
         // All in degrees
         float theta =  45.0f;
         float rho   = -45.0f;
+
+        float operator[](std::size_t p) const noexcept {
+            return (p == 0) ? theta : rho;
+        }
     };
 
     struct ArrayOrientation {
@@ -43,7 +57,8 @@ namespace channels::cdl::antenna {
     };
 
     enum class ElementPattern { 
-        TR_38_901, 
+        TR_38_901,
+        BS,
         ISOTROPIC 
     };
     
@@ -51,11 +66,6 @@ namespace channels::cdl::antenna {
         MODEL1 = 1, 
         MODEL2
     };
-
-    struct AntennaLayout {
-
-    };
-
 
     struct AntennaArray {
         Size struct_size;
@@ -66,7 +76,20 @@ namespace channels::cdl::antenna {
         PolarizationModel pol_model = PolarizationModel::MODEL2;
     };
 
+    
+}
+
+/***************** Function Declarations ************/
+namespace channels::cdl::antenna {
+
     void arrangeStructure(
         AntennaArray& ant_array
     );
+
+    float get_polarization_angle(
+        std::size_t antennaIdx,
+        const AntennaArray& ant_array
+    );
+
+    
 }

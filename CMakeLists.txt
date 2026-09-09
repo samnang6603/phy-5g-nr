@@ -83,9 +83,9 @@ add_executable(${PROJECT_NAME}
     simulations/channel_tests/cdl_tests/cdl_simulations.cpp
     simulations/submodule_tests/ldpc_tests/ldpc_simulations.cpp
     src/common/fec/ldpc/ldpc.cpp
-    src/common/symbols_modulation/symbols_modulation.cpp
-    src/common/symbols_modulation/symbols_modulation_psk.cpp
-    src/common/symbols_modulation/symbols_modulation_qam.cpp
+    src/common/symbol_modulator/symbol_modulator.cpp
+    src/common/symbol_modulator/psk.cpp
+    src/common/symbol_modulator/qam.cpp
     src/channel_models/clustered_delay_line/cdl.cpp
     src/channel_models/clustered_delay_line/antenna_structure/antenna_structure.cpp
     src/utils/utils.cpp

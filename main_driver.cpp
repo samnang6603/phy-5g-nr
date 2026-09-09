@@ -7,7 +7,7 @@
 #include <zlog.h>
 #include <cblas.h>
 #include "simulations/channel_tests/cdl_tests/cdl_simulations.hpp"
-#include "src/common/symbols_modulation/symbols_modulation.hpp"
+#include "src/common/symbol_modulator/symbol_modulator.hpp"
 
 #include "simulations/submodule_tests/ldpc_tests/ldpc_tests.hpp"
 
