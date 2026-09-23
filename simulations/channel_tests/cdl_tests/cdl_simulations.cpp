@@ -7,7 +7,7 @@ namespace channels::cdl {
         nrCDLChannel::Config cfg;
 
         /******************* Predefined Delay Profile ************************/ 
-        cfg.DelayProfile.DelayProfile = pdp::PDP::CDL_D;
+        cfg.DelayProfile.ProfileName = pdp::PDP::CDL_D;
         cfg.DelayProfile.DelaySpread = 3.0e-8f;
 
         //   nullopt  -> K-factor scaling disabled
@@ -44,10 +44,10 @@ namespace channels::cdl {
         tx.Orientation.gamma = 0.0f;
 
         // MATLAB: antTx_struct.Element = '38.901';
-        tx.FieldEffect.Element = antenna::ElementPatternOption::TR_38_901;
+        tx.State.FieldEffect.Element = antenna::ElementPatternOption::TR_38_901;
 
         // MATLAB: antTx_struct.PolarizationModel = 'Model-2';
-        tx.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
+        tx.State.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
 
         /******************* Receive Antenna Array ************************/
         auto& rx = cfg.ReceiveAntennaArraySetup;
@@ -75,10 +75,10 @@ namespace channels::cdl {
         rx.Orientation.gamma = 0.0f;
 
         // MATLAB: antRx_struct.Element = 'isotropic';
-        rx.FieldEffect.Element = antenna::ElementPatternOption::ISOTROPIC;
+        rx.State.FieldEffect.Element = antenna::ElementPatternOption::ISOTROPIC;
 
         // MATLAB: antRx_struct.PolarizationModel = 'Model-2';
-        rx.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
+        rx.State.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
 
         /******************* Construct Channel Object ************************/ 
         //nrCDLChannel cdl;

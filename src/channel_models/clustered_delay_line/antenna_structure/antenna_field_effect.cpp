@@ -3,7 +3,6 @@
 #include <vector>
 #include <algorithm>
 #include "../../../utils/utils.hpp"
-#include "../cdl.hpp"
 #include "antenna_structure.hpp"
 
 /***************** Constants ************************/

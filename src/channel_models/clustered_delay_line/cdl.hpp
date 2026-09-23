@@ -1,22 +1,16 @@
 #pragma once
 
-#include <array>
-#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <random>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include "../../nr5g_common.hpp"
 #include "pdp/cdl_pdp.hpp"
 #include "antenna_structure/antenna_structure.hpp"
+#include "../matlab_mt19937.hpp"
 
-static constexpr std::uint8_t NUMBER_OF_RAYS = 20;
+constexpr std::uint8_t NUMBER_OF_RAYS = 20;
+constexpr std::uint64_t SPEED_OF_LIGHT = 299792458;
 
 namespace channels::cdl {
-
 
     enum class ChannelResponseOutputType {
         PATH_GAINS,
@@ -32,12 +26,13 @@ namespace channels::cdl {
         };
 
         struct RandomStreamConfig {
-            std::uint32_t Seed = 1;
+            std::uint32_t Seed = 73;
+            //MATLABMT19937 Stream;
         };
 
         struct ChannelFilteringConfig {
             uint64_t FilterDelay = 7;               // samples
-            float StopbandAttenuation = 70.0f;     // dB
+            float StopbandAttenuation = 70.0f;      // dB
             float MaxFractionalDelayError = 0.01f;
         };
 
@@ -56,6 +51,10 @@ namespace channels::cdl {
 
             // nullopt means channel filtering disabled
             std::optional<ChannelFilteringConfig> ChannelFiltering;
+
+            std::string InitialPhase = "Random";
+            std::string RayCoupling  = "Random";
+
         };
 
         struct Config {
@@ -86,6 +85,5 @@ namespace channels::cdl {
         std::mt19937 rng_;
         float currentTime_ = 0.0f;
 
-    
     };
 }

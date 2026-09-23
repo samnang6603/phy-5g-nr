@@ -3,6 +3,7 @@
 #include <cassert>
 #include <random>
 #include <cstdint>
+#include "channel_phase/cdl_phase.hpp"
 #include "cdl.hpp"
 
 namespace channels::cdl {
@@ -43,13 +44,18 @@ namespace channels::cdl {
             );
 
         // Step 2: initialize delay profile
-        // initializeDelayProfile();
+        pdp::initializeDelayProfile(config_.DelayProfile);
 
+        // TODO: TBI
         // Step 3: split LOS cluster and perform subclustering
-        // buildClusters();
+        // buildClusters(); 
 
         // Step 4: generate initial phases
-        // generateInitialPhases();
+        std::vector<float> phi = phase::generateInitialPhase(
+            config_.DelayProfile,
+            config_.RandomStream,
+            config_.ChannelControl
+        );
 
         // Step 5: compute ray coupling
         // coupleRays();
@@ -92,8 +98,8 @@ namespace channels::cdl {
         }
 
         if (delay.KFactor.has_value() &&
-            delay.DelayProfile != pdp::PDP::CDL_D &&
-            delay.DelayProfile != pdp::PDP::CDL_E) {
+            delay.ProfileName != pdp::PDP::CDL_D &&
+            delay.ProfileName != pdp::PDP::CDL_E) {
             throw std::invalid_argument(
                 "nrCDLChannel >>> KFactor is only valid for CDL_D and CDL_E."
             );

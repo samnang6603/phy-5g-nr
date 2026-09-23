@@ -1,9 +1,6 @@
 #pragma once
 
-#include <array>
 #include <vector>
-#include "../../../nr5g_common.hpp"
-#include "../../../utils/utils.hpp"
 
 /***************** Constants ************************/
 static constexpr uint8_t NUM_3D_AXIS = 3;
@@ -72,20 +69,25 @@ namespace channels::cdl::antenna {
         std::vector<float> F;
     };
 
-    struct AntennaArrayConfig {
-        SizeConfig ArraySize;
-        SpacingConfig ElementSpacing;
-        PolarizationAnglesConfig PolarizationAngles;
-        ArrayOrientationConfig Orientation; 
+    struct AntennaArrayState {
         AntennaFieldEffectConfig FieldEffect;
         std::vector<float> ElementPositions;
     };
 
+    struct AntennaArrayConfig {
+        SizeConfig ArraySize;
+        SpacingConfig ElementSpacing;
+        PolarizationAnglesConfig PolarizationAngles;
+        ArrayOrientationConfig Orientation;
+        AntennaArrayState State;
+    };
+
     struct AntennaSystemConfig {
-        std::size_t NumInputSignals = 8;
-        std::size_t NumOutputSignals = 2;
+        std::size_t NumInputSignals;
+        std::size_t NumOutputSignals;
         AntennaArrayConfig TransmitAntennaArray;
         AntennaArrayConfig ReceiveAntennaArray;
+        float CarrierFrequency = 4E+9f;
     };
         
 }

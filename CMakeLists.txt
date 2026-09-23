@@ -90,6 +90,7 @@ add_executable(${PROJECT_NAME}
     src/channel_models/clustered_delay_line/antenna_structure/antenna_structure.cpp
     src/channel_models/clustered_delay_line/antenna_structure/antenna_field_effect.cpp
     src/channel_models/clustered_delay_line/pdp/cdl_pdp.cpp
+    src/channel_models/clustered_delay_line/channel_phase/cdl_phase.cpp
     src/utils/utils.cpp
     main_driver.cpp
 )

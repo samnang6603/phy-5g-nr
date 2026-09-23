@@ -10,6 +10,7 @@
 #include "src/common/symbol_modulator/symbol_modulator.hpp"
 
 #include "simulations/submodule_tests/ldpc_tests/ldpc_tests.hpp"
+#include "simulations/random_number_tests/mt19937_simulations.hpp"
 
 
 int main(void) {
@@ -27,11 +28,16 @@ int main(void) {
 
     //common::fec::ldpc::runSimulation1();
 
+    //runRandomSimulation1(73);
+
+    std::vector<float> pp;
+    pp.push_back(5.6f);
+    pp.push_back(-INFINITY);
+    pp.push_back(-0.1f);
+
     channels::cdl::runSimulation1();
 
-
     std::cout << "Simulation Done!" << std::endl;
-
 
     return 0;
 }

@@ -3,7 +3,6 @@
 #include <cmath>
 #include <array>
 #include <cstddef>
-#include "cblas.h"
 #include "../../../utils/utils.hpp"
 #include "antenna_structure.hpp"
 
@@ -124,7 +123,7 @@ namespace channels::cdl::antenna {
         }
 
         std::array<float, NUM_ELEMENT_3D_GRID> vgcs_broadside = compute_lcs2gcs_zbroadside(ort);
-        ant_array.ElementPositions = compute_reoriented_antenna_positions(vgcs_broadside, pos, s);
+        ant_array.State.ElementPositions = compute_reoriented_antenna_positions(vgcs_broadside, pos, s);
         
         // TODO: polarization ormap needed?
 

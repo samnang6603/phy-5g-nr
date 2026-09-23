@@ -1,7 +1,8 @@
 #pragma once
 
-#include <optional>
+#include <vector>
 #include "cdl_pdp_lut.hpp"
+#include <optional>
 
 namespace channels::cdl::pdp {
 
@@ -14,16 +15,31 @@ namespace channels::cdl::pdp {
         float ZoA = 0.0f;
     };
 
+    struct AngleSpreadsList {
+        float C_ASD;
+        float C_ASA;
+        float C_ZSD;
+        float C_ZSA;
+    };
+
     struct DelayProfileConfig {
-        PDP DelayProfile = PDP::CDL_A;
+        PDP ProfileName = PDP::CDL_A;
+        bool HasLoS = false;
         float DelaySpread = 3E-8f;
+        std::vector<CDLCluster> Table;
 
         // nullopt means disabled
         std::optional<float> KFactor;
 
         // nullopt means angle scaling disabled
         std::optional<MeanAnglesList> MeanAngles;
+
+        AngleSpreadsList AngleSpreads;
+        float XPR;
+
     };
+
+    void initializeDelayProfile(DelayProfileConfig& pdp_conf);
 
 
 

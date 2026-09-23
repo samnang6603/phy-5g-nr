@@ -5,19 +5,20 @@
 
 
 /***************** Constants ************************/
-static constexpr uint8_t CDL_A_NUM_CLUSTERS = 23;
-static constexpr uint8_t CDL_B_NUM_CLUSTERS = 23;
-static constexpr uint8_t CDL_C_NUM_CLUSTERS = 24;
-static constexpr uint8_t CDL_D_NUM_CLUSTERS = 14; // including LOS component
-static constexpr uint8_t CDL_E_NUM_CLUSTERS = 15; // including LOS component
+constexpr uint8_t CDL_A_NUM_CLUSTERS = 23;
+constexpr uint8_t CDL_B_NUM_CLUSTERS = 23;
+constexpr uint8_t CDL_C_NUM_CLUSTERS = 24;
+constexpr uint8_t CDL_D_NUM_CLUSTERS = 14; // including LOS component
+constexpr uint8_t CDL_E_NUM_CLUSTERS = 15; // including LOS component
 
 // Kept for compatibility/documentation.
 // Each CDLCluster stores:
 // normalized delay, power, AoD, AoA, ZoD, ZoA
-static constexpr uint8_t CDL_PDP_NUM_PARAMS_COLS = 6;
-
+constexpr uint8_t CDL_PDP_NUM_PARAMS_COLS = 6;
 
 namespace channels::cdl::pdp {
+
+enum class ClusterType {LOS, NLOS};
 
 struct CDLCluster {
     float normalized_delay;
@@ -27,6 +28,21 @@ struct CDLCluster {
     float zod_deg;
     float zoa_deg;
 };
+
+struct CDLPerClusterParam {
+    float C_ASD;
+    float C_ASA;
+    float C_ZSD;
+    float C_ZSA;
+    float XPR;
+};
+
+
+constexpr CDLPerClusterParam CDL_A_PER_CLUSTER_PARAM = {5.0f,11.0f,3.0f,3.0f,10.0f};
+constexpr CDLPerClusterParam CDL_B_PER_CLUSTER_PARAM = {10.0f,22.0f,3.0f,7.0f,8.0f};
+constexpr CDLPerClusterParam CDL_C_PER_CLUSTER_PARAM = {2.0f,15.0f,3.0f,7.0f,7.0f};
+constexpr CDLPerClusterParam CDL_D_PER_CLUSTER_PARAM = {5.0f,8.0f,3.0f,3.0f,11.0f};
+constexpr CDLPerClusterParam CDL_E_PER_CLUSTER_PARAM = {5.0f,11.0f,3.0f,7.0f,8.0f};
 
 static_assert(
     sizeof(CDLCluster) == CDL_PDP_NUM_PARAMS_COLS*sizeof(float),
@@ -163,4 +179,6 @@ constexpr std::array<CDLCluster, CDL_E_NUM_CLUSTERS> CDL_E_PDP = {{
 
 }};
 
+
 } // namespace channels::cdl
+

@@ -34,7 +34,7 @@ namespace utils {
 
         float calculateMeans(std::vector<float> x) {
 
-            float sum;
+            float sum = 0.0f;
             for (const auto& v : x) {
                 sum += v;
             }
