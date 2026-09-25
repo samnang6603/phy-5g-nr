@@ -87,10 +87,13 @@ add_executable(${PROJECT_NAME}
     src/common/symbol_modulator/psk.cpp
     src/common/symbol_modulator/qam.cpp
     src/channel_models/clustered_delay_line/cdl.cpp
-    src/channel_models/clustered_delay_line/antenna_structure/antenna_structure.cpp
-    src/channel_models/clustered_delay_line/antenna_structure/antenna_field_effect.cpp
-    src/channel_models/clustered_delay_line/pdp/cdl_pdp.cpp
-    src/channel_models/clustered_delay_line/channel_phase/cdl_phase.cpp
+    src/channel_models/clustered_delay_line/antenna_array/geometry.cpp
+    src/channel_models/clustered_delay_line/antenna_array/field_pattern.cpp
+    src/channel_models/clustered_delay_line/cluster_profiles/profile.cpp
+    src/channel_models/clustered_delay_line/phase/initial_phase.cpp
+    src/channel_models/clustered_delay_line/ray_coupling/coupling.cpp
+    src/channel_models/clustered_delay_line/mobility/mobility.cpp
+    src/channel_models/clustered_delay_line/response/generator.cpp
     src/utils/utils.cpp
     main_driver.cpp
 )

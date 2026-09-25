@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vector>
-#include "cdl_pdp_lut.hpp"
 #include <optional>
+#include "predefined_profiles.hpp"
+#include "../../channel_models_common.hpp"
 
 namespace channels::cdl::pdp {
 
@@ -27,6 +28,7 @@ namespace channels::cdl::pdp {
         bool HasLoS = false;
         float DelaySpread = 3E-8f;
         std::vector<CDLCluster> Table;
+        std::vector<PropagationCondition> ClusterTypes;
 
         // nullopt means disabled
         std::optional<float> KFactor;
@@ -36,7 +38,6 @@ namespace channels::cdl::pdp {
 
         AngleSpreadsList AngleSpreads;
         float XPR;
-
     };
 
     void initializeDelayProfile(DelayProfileConfig& pdp_conf);

@@ -4,8 +4,8 @@
 #include <span>
 #include <vector>
 #include <cmath>
-#include "cdl_pdp.hpp"
-#include "cdl_pdp_lut.hpp"
+#include "profile.hpp"
+#include "predefined_profiles.hpp"
 #include "../../../utils/utils.hpp"
 
 /***************** Constants ************************/
@@ -29,6 +29,12 @@ namespace channels::cdl::pdp {
     static void get_per_cluster_param(
         DelayProfileConfig& pdp_conf,
         const CDLPerClusterParam per_cluster_param
+    );
+
+    static void get_cluster_types(
+        DelayProfileConfig& pdp_conf,
+        const std::span<const CDLCluster> source_pdp_table,
+        const bool hasLoS
     );
 
     static void get_subcluster(
@@ -90,6 +96,9 @@ namespace channels::cdl::pdp {
         );
         pdp_conf.HasLoS = hasLoS;
 
+        // Build progation condition (cluster types) vector
+        get_cluster_types(pdp_conf, source_pdp_table, hasLoS);
+
         // Get per cluster param
         get_per_cluster_param(pdp_conf, source_per_cluster_params);
 
@@ -105,11 +114,6 @@ namespace channels::cdl::pdp {
         scale_delay_spread(pdp_table, delay_spread);
 
 
-
-
-
-
-
     }
 
     /*
@@ -120,6 +124,22 @@ namespace channels::cdl::pdp {
         // TBI
 
     } */
+
+    static void get_cluster_types(
+        DelayProfileConfig& pdp_conf,
+        const std::span<const CDLCluster> source_pdp_table,
+        const bool hasLoS
+    ) {
+        // Get cluster types
+
+        std::vector<PropagationCondition>& ClusterTypes = pdp_conf.ClusterTypes;
+
+        ClusterTypes.assign(source_pdp_table.size(),PropagationCondition::NLOS);
+
+        if (hasLoS) {
+            ClusterTypes[0] = PropagationCondition::LOS;
+        }
+    }
 
     static void get_per_cluster_param(
         DelayProfileConfig& pdp_conf,

@@ -3,16 +3,15 @@
 #include <cmath>
 #include <array>
 #include <cstddef>
-#include "../../../utils/utils.hpp"
-#include "antenna_structure.hpp"
+#include "antenna.hpp"
 
 /***************** Constants ************************/
 
 
 /***************** Implementations ************************/
-namespace channels::cdl::antenna {
+namespace channels::cdl::antenna::geometry {
 
-    static void arrange_layout(AntennaArrayConfig& ant_array);
+    static void arrange_layout(AntennaArrayConfig& ant_array_conf);
     static std::array<float, NUM_ELEMENT_3D_GRID> compute_lcs2gcs_zbroadside(const ArrayOrientationConfig& ort);
     static std::vector<float> compute_reoriented_antenna_positions(
         const std::array<float, NUM_ELEMENT_3D_GRID>& V,
@@ -20,50 +19,28 @@ namespace channels::cdl::antenna {
         const SizeConfig& s
     );
 
-    AntennaSystemConfig initializeAntennaStructure(
-        AntennaArrayConfig& tx_ant_array,
-        AntennaArrayConfig& rx_ant_array
-    ) {
+    void initializeAntennaStructure(AntennaSystemConfig& ant_sys_conf) {
 
         // Arrange antenna structure and create spatial antenna position map 
+
+        AntennaArrayConfig& tx_ant_array = ant_sys_conf.TransmitAntennaArray;
+        AntennaArrayConfig& rx_ant_array = ant_sys_conf.ReceiveAntennaArray;
 
         arrange_layout(tx_ant_array);
         arrange_layout(rx_ant_array);
 
-        AntennaSystemConfig ant_sys_conf;
         ant_sys_conf.TransmitAntennaArray = tx_ant_array;
         ant_sys_conf.ReceiveAntennaArray  = rx_ant_array;
-
-        return ant_sys_conf;
-
     }
 
-    float get_polarization_angle(
-        std::size_t antennaIdx,
-        const AntennaArrayConfig& ant_array
-    ) {
-        // Returns the polarization slant angle for a given antenna-port index 
-        // based on the configured polarization ordering
-
-        const SizeConfig& s = ant_array.ArraySize;
-        const PolarizationAnglesConfig& pol = ant_array.PolarizationAngles;
-
-        const std::size_t elements_per_pol =
-            static_cast<std::size_t>(s.M)*s.N;
-
-        const std::size_t p = (antennaIdx/elements_per_pol) % s.P;
-
-        return (p == 0) ? pol.theta : pol.rho;
-    }
-
-    static void arrange_layout(AntennaArrayConfig& ant_array) {
+    static void arrange_layout(AntennaArrayConfig& ant_array_conf) {
 
         // Arrange antenna spatial layout
 
-        const auto& s = ant_array.ArraySize;
-        const auto& spc = ant_array.ElementSpacing;
-        const auto& ort = ant_array.Orientation;
-        const auto& pol = ant_array.PolarizationAngles;
+        const auto& s = ant_array_conf.ArraySize;
+        const auto& spc = ant_array_conf.ElementSpacing;
+        const auto& ort = ant_array_conf.Orientation;
+        const auto& pol = ant_array_conf.PolarizationAngles;
 
         std::vector<float> spacing = {
             spc.d_v,
@@ -123,7 +100,7 @@ namespace channels::cdl::antenna {
         }
 
         std::array<float, NUM_ELEMENT_3D_GRID> vgcs_broadside = compute_lcs2gcs_zbroadside(ort);
-        ant_array.State.ElementPositions = compute_reoriented_antenna_positions(vgcs_broadside, pos, s);
+        ant_array_conf.State.ElementPositions = compute_reoriented_antenna_positions(vgcs_broadside, pos, s);
         
         // TODO: polarization ormap needed?
 
@@ -253,9 +230,5 @@ namespace channels::cdl::antenna {
 
         return reoriented;
     }
-
-    
-
-
 
 }

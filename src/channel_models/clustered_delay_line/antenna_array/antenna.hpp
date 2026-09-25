@@ -1,6 +1,9 @@
 #pragma once
 
 #include <vector>
+#include "../../channel_models_common.hpp"
+#include "../../../utils/utils.hpp"
+
 
 /***************** Constants ************************/
 static constexpr uint8_t NUM_3D_AXIS = 3;
@@ -9,6 +12,8 @@ static constexpr uint8_t PHYSICAL_ANTENNA_ARRAY_PROPERTIES = 5;
 
 /***************** Type Definitions ************/
 namespace channels::cdl::antenna {
+
+    namespace geometry {
 
     struct SizeConfig {
         uint16_t M = 2;  // number of rows in antenna array
@@ -30,12 +35,30 @@ namespace channels::cdl::antenna {
         }
     };
 
+    struct PositionConfig {
+        // Initialize with (0, 0, 0)
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+    };
+
     struct SpacingConfig {
         float d_v = 0.5f; // vertical element spacing
         float d_h = 0.5f; // horizontal element spacing
         float dg_v = 1.0f; // vertical panel spacing
         float dg_h = 1.0f; // horizontal panel spacing
     };
+
+    struct ArrayOrientationConfig {
+        // All in degrees
+        float alpha = 0.0f; 
+        float beta  = 0.0f;
+        float gamma = 0.0f;
+    };
+
+    } // namespace geometry
+
+    namespace field_effect {
 
     struct PolarizationAnglesConfig {
         float theta =  45.0f; // degrees
@@ -44,13 +67,6 @@ namespace channels::cdl::antenna {
         float operator[](std::size_t p) const noexcept {
             return (p == 0) ? theta : rho;
         }
-    };
-
-    struct ArrayOrientationConfig {
-        // All in degrees
-        float alpha = 0.0f; 
-        float beta  = 0.0f;
-        float gamma = 0.0f;
     };
 
     enum class ElementPatternOption { 
@@ -74,12 +90,15 @@ namespace channels::cdl::antenna {
         std::vector<float> ElementPositions;
     };
 
+    } // namespace field_effect
+
     struct AntennaArrayConfig {
-        SizeConfig ArraySize;
-        SpacingConfig ElementSpacing;
-        PolarizationAnglesConfig PolarizationAngles;
-        ArrayOrientationConfig Orientation;
-        AntennaArrayState State;
+        geometry::SizeConfig ArraySize;
+        geometry::PositionConfig Position;
+        geometry::SpacingConfig ElementSpacing;
+        geometry::ArrayOrientationConfig Orientation;
+        field_effect::PolarizationAnglesConfig PolarizationAngles;
+        field_effect::AntennaArrayState State;
     };
 
     struct AntennaSystemConfig {
@@ -88,24 +107,24 @@ namespace channels::cdl::antenna {
         AntennaArrayConfig TransmitAntennaArray;
         AntennaArrayConfig ReceiveAntennaArray;
         float CarrierFrequency = 4E+9f;
+        float lambda_0 = SPEED_OF_LIGHT/CarrierFrequency;
     };
         
-}
+} // namespace antenna
 
 /***************** Function Declarations ************/
 namespace channels::cdl::antenna {
 
-    AntennaSystemConfig initializeAntennaStructure(
-        AntennaArrayConfig& tx_ant_array,
-        AntennaArrayConfig& rx_ant_array
-    );
-
-    float get_polarization_angle(
-        std::size_t antennaIdx,
-        const AntennaArrayConfig& ant_array
-    );
+    namespace geometry {
+        void initializeAntennaStructure(AntennaSystemConfig& ant_sys_conf);
+    }
 
     namespace field_effect {
+
+        float get_polarization_angle(
+            std::size_t antennaIdx,
+            const AntennaArrayConfig& ant_array_conf
+        );
         
         std::vector<float> compute_polarization_field_pattern(
             const ElementPatternOption pow_mode,
@@ -114,5 +133,22 @@ namespace channels::cdl::antenna {
             const std::vector<float>& phi_p,
             const float zeta
         );
+
+        //std::vector<float> compute_field_term();
+
     }
+
+    inline std::vector<float> get_LoS_spherical_unit_vector(float phi, float theta) {
+
+        // Get spherical unit vector only for LoS component
+
+        const float sintheta = std::sin(DEG2RAD(theta));
+        std::vector<float> rhat(3);
+
+        rhat[0] = sintheta*std::cos(DEG2RAD(phi));
+        rhat[1] = sintheta*std::sin(DEG2RAD(phi));
+        rhat[2] = std::cos(DEG2RAD(theta));
+        return rhat;
+    }
+
 }

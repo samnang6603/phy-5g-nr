@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include "../../../utils/utils.hpp"
-#include "antenna_structure.hpp"
+#include "antenna.hpp"
 
 /***************** Constants ************************/
 static constexpr float TR38_901_SLA_V = 30.0f;          // Side-Lobe Attenuation (dB)
@@ -17,6 +17,24 @@ static constexpr float PSI_DEGENERATE_THRESH = 1E-5f;   // Degenerate tolerance 
 
 /***************** Function Implementations ************/
 namespace channels::cdl::antenna::field_effect {
+
+    float get_polarization_angle(
+        std::size_t antennaIdx,
+        const AntennaArrayConfig& ant_array_conf
+    ) {
+        // Returns the polarization slant angle for a given antenna-port index 
+        // based on the configured polarization ordering
+
+        const geometry::SizeConfig& s = ant_array_conf.ArraySize;
+        const field_effect::PolarizationAnglesConfig& pol = ant_array_conf.PolarizationAngles;
+
+        const std::size_t elements_per_pol =
+            static_cast<std::size_t>(s.M)*s.N;
+
+        const std::size_t p = (antennaIdx/elements_per_pol) % s.P;
+
+        return (p == 0) ? pol.theta : pol.rho;
+    }
 
     template<ElementPatternOption PowMode>
     static float compute_power_pattern(

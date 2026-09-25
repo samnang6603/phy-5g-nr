@@ -19,7 +19,7 @@ namespace channels::cdl {
         cfg.DelayProfile.MeanAngles = std::nullopt;
 
         /******************* Transmit Antenna Array ************************/ 
-        auto& tx = cfg.TransmitAntennaArraySetup;
+        auto& tx = cfg.AntennaSystem.TransmitAntennaArray;
 
         // MATLAB: antTx_struct.Size = [2 2 2 1 1];
         tx.ArraySize.M  = 2;
@@ -50,7 +50,7 @@ namespace channels::cdl {
         tx.State.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
 
         /******************* Receive Antenna Array ************************/
-        auto& rx = cfg.ReceiveAntennaArraySetup;
+        auto& rx = cfg.AntennaSystem.ReceiveAntennaArray;
 
         // MATLAB: antRx_struct.Size = [1 1 2 1 1];
         rx.ArraySize.M  = 1;
