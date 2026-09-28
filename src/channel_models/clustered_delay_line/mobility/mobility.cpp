@@ -1,5 +1,6 @@
 #include "mobility.hpp"
 #include "../cluster_profiles/profile.hpp"
+#include <variant>
 
 namespace channels::cdl::mobility {
 
@@ -20,7 +21,13 @@ namespace channels::cdl::mobility {
         // all clusters
 
         float p = scatter_conf.MovingScattererProportion;
+
         float v_scatt = scatter_conf.MaximumScattererSpeed;
+
+        if (std::holds_alternative<float>(mobility_conf.MaximumDopplerShift)) {
+            v_scatt = 0;
+        }
+
         uint8_t M = NUMBER_OF_RAYS_PER_CLUSTER;
         uint8_t L = pdp_conf.ClusterTypes.size();
         std::size_t size = static_cast<std::size_t>(M)*L;
@@ -28,7 +35,7 @@ namespace channels::cdl::mobility {
         auto& randomStream = randstream_conf.Stream;
 
         states.resize(size);
-        speed.resize(size);
+        speed.resize(size, 0.0f);
 
         // Use separate loops so each array consumes a contiguous
         // sequence of values from the random stream.
@@ -40,14 +47,16 @@ namespace channels::cdl::mobility {
         // For LOS cluster, there is no moving scatterers
         if (pdp_conf.HasLoS) {
             for (std::size_t i = 0; i < L; ++i) {
-                states[i*M] = 0;
+                states[i*M] = false;
             } 
         }
 
         // Generate RV D (size [N M]) between -v_scatt to v_scatt
         // randD is (0,1) so (0,1)*2-1 = (-1,1). (-1,1)*v_scatt = (-v_scatt,v_scatt)
-        for (auto& v : speed) {
-            v = (static_cast<float>(randomStream.rand())*2 - 1)*v_scatt;
+        if (v_scatt) {
+            for (auto& v : speed) {
+                v = (static_cast<float>(randomStream.rand())*2 - 1)*v_scatt;
+            }
         }
 
         // To be implemented later, available subcluster scenario

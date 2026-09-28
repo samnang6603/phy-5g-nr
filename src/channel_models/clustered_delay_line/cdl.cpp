@@ -6,6 +6,7 @@
 #include "cluster_profiles/profile.hpp"
 #include "ray_coupling/coupling.hpp"
 #include "mobility/mobility.hpp"
+#include "response/generator.hpp"
 #include "cdl.hpp"
 
 namespace channels::cdl {
@@ -44,7 +45,7 @@ namespace channels::cdl {
         mobility::MobilityConfig& Mobility = config_.Mobility;
 
         // Step 1: configure antenna structure
-        antenna::geometry::initializeAntennaStructure(AntennaSystem);
+        antenna::geometry::initialize(AntennaSystem);
 
         // Step 2: initialize delay profile
         pdp::initializeDelayProfile(DelayProfile);
@@ -75,7 +76,8 @@ namespace channels::cdl {
         );
 
         // Step 7: generate static CDL channel
-        // generateChannelRealization();
+        std::vector<float> Hstatic = response::generate_static_path_gains(
+            DelayProfile, AntennaSystem, ray_coupling, phi);
 
         // Step 8: generate initial time-varying CDL channel
 
@@ -116,7 +118,7 @@ namespace channels::cdl {
             );
         }
 
-        if (mobility.MaximumDopplerShift < 0.0f) {
+        if (std::get<float>(mobility.MaximumDopplerShift) < 0.0f) {
             throw std::invalid_argument(
                 "nrCDLChannel >>> MaximumDopplerShift must be nonnegative."
             );

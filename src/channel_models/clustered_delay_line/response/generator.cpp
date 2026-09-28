@@ -33,6 +33,7 @@ static inline constexpr float WRAP_ZENITH_ANGLE(float angle) {
 
 namespace channels::cdl::response {
 
+    /***************** Type Definitions ************************/
     struct Dim {
         std::size_t T = 1;
         std::size_t X = NULL;
@@ -41,15 +42,26 @@ namespace channels::cdl::response {
         std::size_t R;
     };
 
+    /***************** Function Declarations ********************/
+    static std::vector<float> compute_LoS_cluster_gain(
+        Dim& D,
+        const antenna::AntennaSystemConfig& ant_sys_conf,
+        const pdp::DelayProfileConfig& pdp_conf,
+        const std::vector<float>& phi,
+        const std::vector<std::size_t>& coupling,
+        const float XPR
+    );
+
+    /***************** Function Implementations ********************/
     std::vector<float> generate_static_path_gains(
         const pdp::DelayProfileConfig& pdp_conf,
         const antenna::AntennaSystemConfig& ant_sys_conf,
-        const std::vector<float>& coupling,
+        const std::vector<std::size_t>& coupling,
         const std::vector<float>& phi
     ) {
         // Generate static cdl path gains without Doppler effect
 
-        const Dim D{1,
+        Dim D{1,
             0,
             NUMBER_OF_RAYS_PER_CLUSTER,
             ant_sys_conf.NumInputSignals,
@@ -59,6 +71,15 @@ namespace channels::cdl::response {
         const std::vector<PropagationCondition>& cluster_types = pdp_conf.ClusterTypes;
         const std::size_t L = cluster_types.size();
         const float XPR = pdp_conf.XPR;
+
+        std::vector<float> los_gain = compute_LoS_cluster_gain(
+            D, 
+            ant_sys_conf, 
+            pdp_conf, 
+            phi, 
+            coupling, 
+            XPR
+        );
 
 
 
@@ -90,15 +111,17 @@ namespace channels::cdl::response {
         
         // TODO: Angle scaling section 7.7.5.1 to be implemented
 
-        const float lambda_0 = ant_sys_conf.lambda_0;
+        const float lambda_0 = ant_sys_conf.Wavelength();
 
         // Processing for Tx
         // ----------------------------------------------------------------------- 
-        std::vector<float> rhat_tx = antenna::get_LoS_spherical_unit_vector(phi_AoD, theta_ZoD);
+        std::array<float, antenna::geometry::NUM_3D_AXIS> rhat_tx = 
+            antenna::geometry::get_LoS_spherical_unit_vector(phi_AoD, theta_ZoD);
 
         // Get transmit antenna/subarray location vector
-        const std::vector<float>& tx_radiator_pos = ant_sys_conf.TransmitAntennaArray.State.ElementPositions;
-        const antenna::geometry::PositionConfig& pos_conf = ant_sys_conf.TransmitAntennaArray.Position;
+        const antenna::AntennaArrayConfig& tx_ant_conf = ant_sys_conf.TransmitAntennaArray;
+        const std::vector<float>& tx_radiator_pos = tx_ant_conf.FieldPattern.ElementPositions;
+        const antenna::geometry::PositionConfig& pos_conf = tx_ant_conf.Position;
 
         // Calculate the location vector dbar of Tx
         std::vector<float> dbar_tx(tx_radiator_pos.size());
@@ -114,22 +137,27 @@ namespace channels::cdl::response {
         std::vector<std::complex<float>> tx_field_term(NUM_FIELD_SPHERICAL_ANGLES*term_size); 
         std::vector<std::complex<float>> tx_loc_term(term_size);
 
-        for (std::size_t s = 0; s < ant_sys_conf.NumInputSignals; ++s) {
+        std::vector<float> Ftx(numTx*NUMBER_OF_RAYS_PER_CLUSTER*NUM_FIELD_SPHERICAL_ANGLES);
+        std::size_t F_idx = 0;
+        for (std::size_t s = 0; s < numTx; ++s) {
             for (std::size_t m = 0; m < NUMBER_OF_RAYS_PER_CLUSTER; ++m) {
                 for (std::size_t b = 0; b < NUM_FIELD_SPHERICAL_ANGLES; ++b) {
+
+                    Ftx = antenna::field_pattern::compute_LoS_field_term(tx_ant_conf, theta_ZoD, phi_AoD);
 
                 }
             }
         }
 
 
-
-
-
         const std::size_t numRx = ant_sys_conf.NumOutputSignals;
 
-        
-        return rhat_tx;
+
+
+
+
+        std::vector<float> x;
+        return x;
 
 
 

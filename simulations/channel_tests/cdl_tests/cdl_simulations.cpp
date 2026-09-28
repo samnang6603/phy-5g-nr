@@ -22,11 +22,11 @@ namespace channels::cdl {
         auto& tx = cfg.AntennaSystem.TransmitAntennaArray;
 
         // MATLAB: antTx_struct.Size = [2 2 2 1 1];
-        tx.ArraySize.M  = 2;
-        tx.ArraySize.N  = 2;
-        tx.ArraySize.P  = 2;
-        tx.ArraySize.Mg = 1;
-        tx.ArraySize.Ng = 1;
+        tx.Size.M  = 2;
+        tx.Size.N  = 2;
+        tx.Size.P  = 2;
+        tx.Size.Mg = 1;
+        tx.Size.Ng = 1;
 
         // MATLAB: antTx_struct.ElementSpacing = [0.5 0.5 1.0 1.0];
         tx.ElementSpacing.d_v  = 0.5f;
@@ -44,20 +44,20 @@ namespace channels::cdl {
         tx.Orientation.gamma = 0.0f;
 
         // MATLAB: antTx_struct.Element = '38.901';
-        tx.State.FieldEffect.Element = antenna::ElementPatternOption::TR_38_901;
+        tx.FieldPattern.FieldEffect.Element = antenna::field_pattern::ElementPatternOption::TR_38_901;
 
         // MATLAB: antTx_struct.PolarizationModel = 'Model-2';
-        tx.State.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
+        tx.FieldPattern.FieldEffect.PolarizationModel = antenna::field_pattern::PolarizationModelOption::MODEL2;
 
         /******************* Receive Antenna Array ************************/
         auto& rx = cfg.AntennaSystem.ReceiveAntennaArray;
 
         // MATLAB: antRx_struct.Size = [1 1 2 1 1];
-        rx.ArraySize.M  = 1;
-        rx.ArraySize.N  = 1;
-        rx.ArraySize.P  = 2;
-        rx.ArraySize.Mg = 1;
-        rx.ArraySize.Ng = 1;
+        rx.Size.M  = 1;
+        rx.Size.N  = 1;
+        rx.Size.P  = 2;
+        rx.Size.Mg = 1;
+        rx.Size.Ng = 1;
 
         // MATLAB: antRx_struct.ElementSpacing = [0.5 0.5 0.5 0.5];
         rx.ElementSpacing.d_v  = 0.5f;
@@ -75,10 +75,10 @@ namespace channels::cdl {
         rx.Orientation.gamma = 0.0f;
 
         // MATLAB: antRx_struct.Element = 'isotropic';
-        rx.State.FieldEffect.Element = antenna::ElementPatternOption::ISOTROPIC;
+        rx.FieldPattern.FieldEffect.Element = antenna::field_pattern::ElementPatternOption::ISOTROPIC;
 
         // MATLAB: antRx_struct.PolarizationModel = 'Model-2';
-        rx.State.FieldEffect.PolarizationModel = antenna::PolarizationModelOption::MODEL2;
+        rx.FieldPattern.FieldEffect.PolarizationModel = antenna::field_pattern::PolarizationModelOption::MODEL2;
 
         /******************* Construct Channel Object ************************/ 
         //nrCDLChannel cdl;

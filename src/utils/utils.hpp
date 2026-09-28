@@ -15,6 +15,10 @@ constexpr float KDEG2RAD = std::numbers::pi_v<float>/180.0f;
 constexpr float DEG2RAD(float degrees) {
     return degrees*KDEG2RAD;
 }
+constexpr float KRAD2DEG = 180.0f/std::numbers::pi_v<float>;
+constexpr float RAD2DEG(float rads) {
+    return rads*KRAD2DEG;
+}
 constexpr float LOG10_TOLERANCE = 300.0f;
 constexpr float POW2DB(float x) {
     return (10.0f*std::log10(x) + LOG10_TOLERANCE) - LOG10_TOLERANCE;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <variant>
 #include <vector>
 #include "../cluster_profiles/profile.hpp"
 #include "../../channel_models_common.hpp"
@@ -14,7 +15,7 @@ namespace channels::cdl::mobility {
     };
 
     struct MobilityConfig {
-        float MaximumDopplerShift = 5.0f;
+        std::variant<float, std::vector<float>> MaximumDopplerShift{5.0f};
         ScattererConfig Scatterer;
     };
 

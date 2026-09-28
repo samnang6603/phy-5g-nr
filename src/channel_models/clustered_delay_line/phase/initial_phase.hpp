@@ -10,7 +10,7 @@ namespace channels::cdl::phase {
         pdp::DelayProfileConfig& pdp_conf,
         RandomStreamConfig& rstream_conf,
         const ChannelControlConfig& control_conf,
-        const antenna::AntennaSystemConfig& ant_conf
+        const antenna::AntennaSystemConfig& ant_array_conf
     );
 
 }
