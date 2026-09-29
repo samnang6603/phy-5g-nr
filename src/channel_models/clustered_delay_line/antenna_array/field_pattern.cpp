@@ -1,11 +1,15 @@
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <complex>
 #include <stdexcept>
 #include <vector>
 #include <algorithm>
 #include <cblas.h>
 #include "../../../utils/utils.hpp"
 #include "antenna.hpp"
+
+namespace channels::cdl::antenna::field_pattern {
 
 /***************** Constants ************************/
 static constexpr float TR38_901_SLA_V = 30.0f;          // Side-Lobe Attenuation (dB)
@@ -16,188 +20,39 @@ static constexpr float TR38_901_PHI_3dB = 65.0f;        // Horizontal Half-Power
 static constexpr float TR38_901_PHI_3dB_INV = 1.0f/TR38_901_PHI_3dB;
 static constexpr float TR38_901_G_MAX = 8.0f;           // Maximum directional gain of an element (dBi)
 static constexpr float PSI_DEGENERATE_THRESH = 1E-5f;   // Degenerate tolerance protection
+static constexpr float TWO_PI = M_PI*2.0f;
+
+}
 
 /***************** Function Implementations ************/
 namespace channels::cdl::antenna::field_pattern {
+
+
 
     template<
         ElementPatternOption PowMode,
         PolarizationModelOption PolMode
     >
-    static void compute_pattern_kernel(
+    static std::vector<float> compute_pattern_kernel(
         const std::vector<float>& theta_p,
         const std::vector<float>& phi_p,
         const float cos_zeta,
-        const float sin_zeta,
-        std::vector<float>& F
+        const float sin_zeta
     );
 
-    float get_polarization_angle(
-        std::size_t antennaIdx,
-        const AntennaArrayConfig& ant_array_conf
-    ) {
-        // Returns the polarization slant angle for a given antenna-port index 
-        // based on the configured polarization ordering
-
-        const geometry::SizeConfig& s = ant_array_conf.Size;
-        const field_pattern::PolarizationAnglesConfig& pol = ant_array_conf.PolarizationAngles;
-
-        const std::size_t elements_per_pol =
-            static_cast<std::size_t>(s.M)*s.N;
-
-        const std::size_t p = (antennaIdx/elements_per_pol) % s.P;
-
-        return (p == 0) ? pol.theta : pol.rho;
-    }
-
-    std::vector<float> compute_polarization_field_pattern(
+    static std::vector<float> compute_polarization_field_pattern(
         const ElementPatternOption pow_mode,
         const PolarizationModelOption pol_mode,
         const std::vector<float>& theta_p,
         const std::vector<float>& phi_p,
         const float zeta
-    ) {
-        // Compute field pattern of elements in LCS
-
-        if (theta_p.size() != phi_p.size()) {
-            throw std::invalid_argument(
-                "compute_polarization_field_pattern >>> "
-                "theta_p and phi_p must have the same size"
-            );
-        }
-
-        const std::size_t theta_len = theta_p.size();
-
-        std::vector<float> F(theta_len*2); // Field pattern output
-
-        const float zeta_d = DEG2RAD(zeta);
-        const float cos_zeta = std::cos(zeta_d);
-        const float sin_zeta = std::sin(zeta_d);
-
-        switch (pol_mode) {
-            case PolarizationModelOption::MODEL1:
-                switch (pow_mode) {
-                    case ElementPatternOption::TR_38_901:
-                        compute_pattern_kernel<
-                            ElementPatternOption::TR_38_901,
-                            PolarizationModelOption::MODEL1
-                        >(
-                            theta_p,
-                            phi_p,
-                            cos_zeta,
-                            sin_zeta,
-                            F
-                        );
-                        break;
-
-                    case ElementPatternOption::ISOTROPIC:
-                        compute_pattern_kernel<
-                            ElementPatternOption::ISOTROPIC,
-                            PolarizationModelOption::MODEL1
-                        >(
-                            theta_p,
-                            phi_p,
-                            cos_zeta,
-                            sin_zeta,
-                            F
-                        );
-                        break;
-
-                    default:
-                        throw std::invalid_argument(
-                            "compute_polarization_field_pattern >>> Invalid power pattern"
-                        );
-                }
-                break;
-
-            case PolarizationModelOption::MODEL2:
-                switch (pow_mode) {
-                    case ElementPatternOption::TR_38_901:
-                        compute_pattern_kernel<
-                            ElementPatternOption::TR_38_901,
-                            PolarizationModelOption::MODEL2
-                        >(
-                            theta_p,
-                            phi_p,
-                            cos_zeta,
-                            sin_zeta,
-                            F
-                        );
-                        break;
-
-                    case ElementPatternOption::ISOTROPIC:
-                        compute_pattern_kernel<
-                            ElementPatternOption::ISOTROPIC,
-                            PolarizationModelOption::MODEL2
-                        >(
-                            theta_p,
-                            phi_p,
-                            cos_zeta,
-                            sin_zeta,
-                            F
-                        );
-                        break;
-
-                    default:
-                        throw std::invalid_argument(
-                            "compute_power_pattern >>> Invalid power pattern"
-                        );
-                }
-                break;
-
-            default:
-                throw std::invalid_argument(
-                    "compute_polarization >>> Invalid polarization model"
-                );
-        }
-
-        return F;
-    }
-
-    template<ElementPatternOption PowMode>
-    static float compute_power_pattern(
-        const float theta_p,
-        const float phi_p
-    ) {
-        // Compute A_prime, antenna gain pattern Antenna element radiation
-        // pattern is described in TR 38.901 Section 7.3 table 7.3-1
-
-        static_assert(
-            PowMode == ElementPatternOption::TR_38_901 ||
-            PowMode == ElementPatternOption::ISOTROPIC,
-            "compute_power_pattern >>> Invalid power pattern"
-        );
-
-        if constexpr (
-            PowMode == ElementPatternOption::TR_38_901
-        ) {
-            // Antenna element vertical radiation pattern (dB)
-            const float tmp0 = theta_p*TR38_901_THETA_3dB_INV;
-            const float tmp1 = 12.0f*tmp0*tmp0;
-            const float A_EV = -std::min(tmp1, TR38_901_SLA_V);
-
-            // Antenna element horizontal radiation pattern (dB)
-            const float tmp2 = phi_p*TR38_901_PHI_3dB_INV;
-            const float tmp3 = 12.0f*tmp2*tmp2;
-            const float A_EH = -std::min(tmp3, TR38_901_A_M);
-
-            // Combining method for 3D antenna element pattern (dB)
-            const float tmp4 = -std::min(-(A_EV + A_EH), TR38_901_A_M);
-
-            // Incorporate maximum gain and convert to linear power
-            return std::pow(10.0f, (tmp4 + TR38_901_G_MAX)*0.1f);
-        }
-
-        if constexpr (PowMode == ElementPatternOption::ISOTROPIC) {
-            // Equally radiate power in all directions, pattern is circle
-            return 1.0f;
-        }
-    }
+    );
 
     std::vector<float> compute_LoS_field_term(
         const antenna::AntennaArrayConfig& ant_array_conf,
         const float theta,
-        const float phi
+        const float phi,
+        const std::size_t ant_idx
     ) {
 
         // Compute field term in GCS
@@ -306,33 +161,229 @@ namespace channels::cdl::antenna::field_pattern {
 
         const float psi = std::atan2(y, x);
 
+        const PatternConfig& pattern_conf = ant_array_conf.FieldPattern.FieldEffect;
+        const PolarizationAnglesConfig& pol_conf = ant_array_conf.PolarizationAngles;
 
+        const std::vector<float> theta_prime_vec = {RAD2DEG(theta_prime)};
+        const std::vector<float> phi_prime_vec   = {RAD2DEG(phi_prime)};
 
+        // Element's antenna index polarization angle selector
+        const float zeta = pol_conf.PolarizationOrientationMap[geometry::NUM_3D_AXIS*ant_idx + 2];
 
+        // Compute field pattern
+        std::vector<float> F = compute_polarization_field_pattern(
+            pattern_conf.Element, 
+            pattern_conf.PolarizationModel,
+            theta_prime_vec,
+            phi_prime_vec,
+            zeta
+        );
 
+        // Finally, we have everything we need to compute fieldTerm in GCS,
+        // using equation 7.1-11
+        const float cospsi = std::cos(psi);
+        const float sinpsi = std::sin(psi);
 
+        //              [cospsi  -sinpsi]
+        // fieldTerm1 = |               | * F
+        //              [sinpsi   cospsi]
+        // Alternatively, simplied form, hand derived for optimization
+        std::vector<float> field_term(NUM_MAX_POLARIZATION);
 
+        field_term[0] = F[0]*cospsi - F[1]*sinpsi;
+        field_term[1] = F[0]*sinpsi + F[1]*cospsi;
 
+        return field_term;
+    };
 
-        std::vector<float> kk;
+    std::vector<std::complex<float>> get_LoS_location_term(
+        const std::array<float, geometry::NUM_3D_AXIS>& rhat,
+        const std::vector<float>& dbar,
+        const float lambda_0,
+        const std::size_t ant_idx
+    ) {
+        // Get location term
 
+        const float v1 = rhat[0]*dbar[ant_idx*geometry::NUM_3D_AXIS];
+        const float v2 = rhat[1]*dbar[ant_idx*geometry::NUM_3D_AXIS + 1];
+        const float v3 = rhat[2]*dbar[ant_idx*geometry::NUM_3D_AXIS + 2];
+        const float sumv = TWO_PI*(v1 + v2 + v3)/lambda_0;
+        const std::complex<float> c(std::cos(sumv), std::sin(sumv));
 
+        std::vector<std::complex<float>> loc_term(NUMBER_OF_RAYS_PER_CLUSTER, c);
 
-        return kk;
+        return loc_term;
 
+    }
+
+    float get_polarization_angle(
+        std::size_t antennaIdx,
+        const AntennaArrayConfig& ant_array_conf
+    ) {
+        // Returns the polarization slant angle for a given antenna-port index 
+        // based on the configured polarization ordering
+
+        const geometry::SizeConfig& s = ant_array_conf.Size;
+        const field_pattern::PolarizationAnglesConfig& pol = ant_array_conf.PolarizationAngles;
+
+        const std::size_t elements_per_pol =
+            static_cast<std::size_t>(s.M)*s.N;
+
+        const std::size_t p = (antennaIdx/elements_per_pol) % s.P;
+
+        return (p == 0) ? pol.theta : pol.rho;
+    }
+
+    static std::vector<float> compute_polarization_field_pattern(
+        const ElementPatternOption pow_mode,
+        const PolarizationModelOption pol_mode,
+        const std::vector<float>& theta_p,
+        const std::vector<float>& phi_p,
+        const float zeta
+    ) {
+        // Compute field pattern of elements in LCS
+
+        if (theta_p.size() != phi_p.size()) {
+            throw std::invalid_argument(
+                "compute_polarization_field_pattern >>> "
+                "theta_p and phi_p must have the same size"
+            );
+        }
+
+        std::vector<float> F; // Field pattern output
+
+        const float zeta_r = DEG2RAD(zeta);
+        const float cos_zeta = std::cos(zeta_r);
+        const float sin_zeta = std::sin(zeta_r);
+
+        switch (pol_mode) {
+            case PolarizationModelOption::MODEL1:
+                switch (pow_mode) {
+                    case ElementPatternOption::TR_38_901:
+                        F = compute_pattern_kernel<
+                            ElementPatternOption::TR_38_901,
+                            PolarizationModelOption::MODEL1
+                        >(
+                            theta_p,
+                            phi_p,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    case ElementPatternOption::ISOTROPIC:
+                        F = compute_pattern_kernel<
+                            ElementPatternOption::ISOTROPIC,
+                            PolarizationModelOption::MODEL1
+                        >(
+                            theta_p,
+                            phi_p,
+                            cos_zeta,
+                            sin_zeta
+                        );                        
+                        break;
+
+                    default:
+                        throw std::invalid_argument(
+                            "compute_polarization_field_pattern >>> Invalid power pattern"
+                        );
+                }
+                break;
+
+            case PolarizationModelOption::MODEL2:
+                switch (pow_mode) {
+                    case ElementPatternOption::TR_38_901:
+                        F = compute_pattern_kernel<
+                            ElementPatternOption::TR_38_901,
+                            PolarizationModelOption::MODEL2
+                        >(
+                            theta_p,
+                            phi_p,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    case ElementPatternOption::ISOTROPIC:
+                        F = compute_pattern_kernel<
+                            ElementPatternOption::ISOTROPIC,
+                            PolarizationModelOption::MODEL2
+                        >(
+                            theta_p,
+                            phi_p,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    default:
+                        throw std::invalid_argument(
+                            "compute_power_pattern >>> Invalid power pattern"
+                        );
+                }
+                break;
+
+            default:
+                throw std::invalid_argument(
+                    "compute_polarization >>> Invalid polarization model"
+                );
+        }
+
+        return F;
+    }
+
+    template<ElementPatternOption PowMode>
+    static float compute_power_pattern(
+        const float theta_p_deg,
+        const float phi_p_deg
+    ) {
+        // Compute A_prime, antenna gain pattern Antenna element radiation
+        // pattern is described in TR 38.901 Section 7.3 table 7.3-1
+
+        static_assert(
+            PowMode == ElementPatternOption::TR_38_901 ||
+            PowMode == ElementPatternOption::ISOTROPIC,
+            "compute_power_pattern >>> Invalid power pattern"
+        );
+
+        if constexpr (
+            PowMode == ElementPatternOption::TR_38_901
+        ) {
+            // Antenna element vertical radiation pattern (dB)
+            const float tmp0 = (theta_p_deg - 90)*TR38_901_THETA_3dB_INV;
+            const float tmp1 = 12.0f*tmp0*tmp0;
+            const float A_EV = -std::min(tmp1, TR38_901_SLA_V);
+
+            // Antenna element horizontal radiation pattern (dB)
+            const float tmp2 = phi_p_deg*TR38_901_PHI_3dB_INV;
+            const float tmp3 = 12.0f*tmp2*tmp2;
+            const float A_EH = -std::min(tmp3, TR38_901_A_M);
+
+            // Combining method for 3D antenna element pattern (dB)
+            const float tmp4 = -std::min(-(A_EV + A_EH), TR38_901_A_M);
+
+            // Incorporate maximum gain and convert to linear power
+            return std::pow(10.0f, (tmp4 + TR38_901_G_MAX)*0.1f);
+        }
+
+        if constexpr (PowMode == ElementPatternOption::ISOTROPIC) {
+            // Equally radiate power in all directions, pattern is circle
+            return 1.0f;
+        }
     }
 
     template<
         ElementPatternOption PowMode,
         PolarizationModelOption PolMode
     >
-    static void compute_pattern_kernel(
+    static std::vector<float> compute_pattern_kernel(
         const std::vector<float>& theta_p,
         const std::vector<float>& phi_p,
         const float cos_zeta,
-        const float sin_zeta,
-        std::vector<float>& F
+        const float sin_zeta
     ) {
+        // Compute field pattern kernel
+
         static_assert(
             PolMode == PolarizationModelOption::MODEL1 ||
             PolMode == PolarizationModelOption::MODEL2,
@@ -341,9 +392,12 @@ namespace channels::cdl::antenna::field_pattern {
 
         const std::size_t theta_len = theta_p.size();
 
+        std::vector<float> F(NUM_MAX_POLARIZATION);
+
         for (std::size_t i = 0; i < theta_len; ++i) {
 
             const float prad = compute_power_pattern<PowMode>(theta_p[i], phi_p[i]);
+            const float prad_sqrt = std::sqrt(prad);
 
             if constexpr (PolMode == PolarizationModelOption::MODEL1) {
                 // TR 38.901 7.3.2 Model-1
@@ -351,13 +405,13 @@ namespace channels::cdl::antenna::field_pattern {
                 // Rotation matrix elements cos(Psi) and sin(Psi) for an angular
                 // displacement of Psi due to the orientation of the LCS w.r.t. the GCS
                 // See Equation 7.3-3 cos(phi) and sin(phi)
-                const float theta_p_d = DEG2RAD(theta_p[i]);
-                const float sin_theta = std::sin(theta_p_d);
-                const float cos_theta = std::cos(theta_p_d);
+                const float theta_p_r = DEG2RAD(theta_p[i]);
+                const float sin_theta = std::sin(theta_p_r);
+                const float cos_theta = std::cos(theta_p_r);
 
-                const float phi_p_d = DEG2RAD(phi_p[i]);
-                const float sin_phi = std::sin(phi_p_d);
-                const float cos_phi = std::cos(phi_p_d);
+                const float phi_p_r = DEG2RAD(phi_p[i]);
+                const float sin_phi = std::sin(phi_p_r);
+                const float cos_phi = std::cos(phi_p_r);
 
                 const float tmp = sin_zeta*sin_phi;
                 const float tmp0 = cos_zeta*cos_theta;
@@ -395,19 +449,21 @@ namespace channels::cdl::antenna::field_pattern {
                     |         |  =  |                  | * |          |
                     [ F_phi_p ]     [sin(phi)  cos(phi)]   [ F_phi_pp ]
                 */
-                F[i] = prad*cos_psi;
-                F[i + theta_len] = prad*sin_psi;
+                F[i] = prad_sqrt*cos_psi;
+                F[i + theta_len] = prad_sqrt*sin_psi;
             }
 
             if constexpr (PolMode == PolarizationModelOption::MODEL2) {
 
                 // TR 38.901 Equation 7.3-4
-                F[i] = prad*cos_zeta;
+                F[i] = prad_sqrt*cos_zeta;
 
                 // TR 38.901 Equation 7.3-5
-                F[i + theta_len] = prad*sin_zeta;
+                F[i + theta_len] = prad_sqrt*sin_zeta;
             }
         }
+
+        return F;
     }
     
 

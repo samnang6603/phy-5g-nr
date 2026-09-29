@@ -61,25 +61,31 @@ namespace channels::cdl::response {
     ) {
         // Generate static cdl path gains without Doppler effect
 
+        const std::size_t numTx = ant_sys_conf.NumInputSignals;
+        const std::size_t numRx = ant_sys_conf.NumOutputSignals;
+        const bool hasLoS = pdp_conf.HasLoS;
+
         Dim D{1,
             0,
             NUMBER_OF_RAYS_PER_CLUSTER,
-            ant_sys_conf.NumInputSignals,
-            ant_sys_conf.NumOutputSignals,                    
+            numTx,
+            numRx,                    
             };
 
         const std::vector<PropagationCondition>& cluster_types = pdp_conf.ClusterTypes;
         const std::size_t L = cluster_types.size();
         const float XPR = pdp_conf.XPR;
 
-        std::vector<float> los_gain = compute_LoS_cluster_gain(
-            D, 
-            ant_sys_conf, 
-            pdp_conf, 
-            phi, 
-            coupling, 
-            XPR
-        );
+        if (hasLoS) {
+            std::vector<float> los_gain = compute_LoS_cluster_gain(
+                D, 
+                ant_sys_conf, 
+                pdp_conf, 
+                phi, 
+                coupling, 
+                XPR
+            );
+        }
 
 
 
@@ -113,8 +119,7 @@ namespace channels::cdl::response {
 
         const float lambda_0 = ant_sys_conf.Wavelength();
 
-        // Processing for Tx
-        // ----------------------------------------------------------------------- 
+        // ----------------------------------Processing for Tx-----------------------------------------------------------------
         std::array<float, antenna::geometry::NUM_3D_AXIS> rhat_tx = 
             antenna::geometry::get_LoS_spherical_unit_vector(phi_AoD, theta_ZoD);
 
@@ -137,18 +142,29 @@ namespace channels::cdl::response {
         std::vector<std::complex<float>> tx_field_term(NUM_FIELD_SPHERICAL_ANGLES*term_size); 
         std::vector<std::complex<float>> tx_loc_term(term_size);
 
-        std::vector<float> Ftx(numTx*NUMBER_OF_RAYS_PER_CLUSTER*NUM_FIELD_SPHERICAL_ANGLES);
-        std::size_t F_idx = 0;
+        //std::vector<float> field_term_tx(numTx*antenna::NUM_MAX_POLARIZATION);
+
+        // Compute 
         for (std::size_t s = 0; s < numTx; ++s) {
-            for (std::size_t m = 0; m < NUMBER_OF_RAYS_PER_CLUSTER; ++m) {
-                for (std::size_t b = 0; b < NUM_FIELD_SPHERICAL_ANGLES; ++b) {
 
-                    Ftx = antenna::field_pattern::compute_LoS_field_term(tx_ant_conf, theta_ZoD, phi_AoD);
+            auto field_term_tx = antenna::field_pattern::compute_LoS_field_term(
+                tx_ant_conf,
+                theta_ZoD, 
+                phi_AoD, 
+                s
+            );
 
-                }
-            }
+            auto loc_term_tx = antenna::field_pattern::get_LoS_location_term(
+                rhat_tx,
+                dbar_tx,
+                lambda_0,
+                s
+            );
+
+            //std::cout << "Aha!" << std::endl;
         }
 
+        //-----------------------------------End Processing for Tx-----------------------------------------------------------------
 
         const std::size_t numRx = ant_sys_conf.NumOutputSignals;
 
@@ -156,7 +172,7 @@ namespace channels::cdl::response {
 
 
 
-        std::vector<float> x;
+        std::vector<float> x(2,0.0f);
         return x;
 
 

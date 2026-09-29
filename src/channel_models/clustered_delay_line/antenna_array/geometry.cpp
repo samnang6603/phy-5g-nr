@@ -62,7 +62,8 @@ namespace channels::cdl::antenna::geometry {
             s.P,
         };
 
-        std::size_t num_elem = static_cast<std::size_t>(s.M)*s.N*s.P*s.Mg*s.Ng;
+        std::size_t num_elem_per_panel = static_cast<std::size_t>(s.M)*s.N;
+        std::size_t num_elem = num_elem_per_panel*s.P*s.Mg*s.Ng;
 
         std::vector<float> pos(s.num_antenna_ports()*NUM_3D_AXIS,0.0f);
 
@@ -111,14 +112,13 @@ namespace channels::cdl::antenna::geometry {
         
         // Polarization orientation map computations
         field_pattern::PolarizationAnglesConfig& pol_conf = ant_array_conf.PolarizationAngles;
-        std::vector<float> ormap_theta(num_elem*NUM_3D_AXIS);
-        std::vector<float> ormap_rho(num_elem*NUM_3D_AXIS);
+        std::vector<float>& ormap = pol_conf.PolarizationOrientationMap;
+        ormap.resize(num_elem*NUM_3D_AXIS);
 
-        for (std::size_t i = 0; i < NUM_3D_AXIS; ++i) {
-            ormap_theta[2 + i*num_elem] = pol_conf.theta;
-            ormap_rho[2 + i*num_elem] = pol_conf.rho;
+        for (std::size_t i = 0; i < num_elem_per_panel; ++i) {
+            ormap[NUM_3D_AXIS*i + 2] = pol_conf.theta;
+            ormap[NUM_3D_AXIS*i + 2 + num_elem_per_panel*NUM_3D_AXIS] = pol_conf.rho;
         }
-
 
     }
 

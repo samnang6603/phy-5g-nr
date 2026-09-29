@@ -9,6 +9,8 @@
 /***************** Type Definitions ************/
 namespace channels::cdl::antenna {
 
+    inline constexpr std::size_t NUM_MAX_POLARIZATION = 2;
+
     namespace geometry {
 
         /***************** Constants ************************/
@@ -248,21 +250,19 @@ namespace channels::cdl::antenna {
             std::size_t antennaIdx,
             const AntennaArrayConfig& ant_array_conf
         );
-        
-        std::vector<float> compute_polarization_field_pattern(
-            const ElementPatternOption pow_mode,
-            const PolarizationModelOption pol_mode,
-            const std::vector<float>& theta_p,
-            const std::vector<float>& phi_p,
-            const float zeta
-        );
 
         std::vector<float> compute_LoS_field_term(
             const antenna::AntennaArrayConfig& ant_array_conf,
             const float theta,
-            const float phi
+            const float phi,
+            const std::size_t ant_idx
         );
 
+        std::vector<std::complex<float>> get_LoS_location_term(
+            const std::array<float, geometry::NUM_3D_AXIS>& rhat,
+            const std::vector<float>& dbar,
+            const float lambda_0,
+            const std::size_t ant_idx
+        );
     }
-
 }

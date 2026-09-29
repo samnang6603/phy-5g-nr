@@ -1,4 +1,7 @@
+#include <chrono>
 #include "cdl_simulations.hpp"
+
+#define CPU_BENCHMARK 1
 
 namespace channels::cdl {
 
@@ -84,7 +87,15 @@ namespace channels::cdl {
         //nrCDLChannel cdl;
         //cdl.configure(cfg); 
         // OR
+#if CPU_BENCHMARK
+    auto start = std::chrono::steady_clock::now();
+#endif
         nrCDLChannel cdl{cfg};
+#if CPU_BENCHMARK
+    auto stop = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration<float, std::milli>(stop - start).count();
+    std::cout << "[BENCHMARK] nrCDLChannel() instantiation duration: " << duration << " ms" << std::endl;
+#endif    
 
 
     }
