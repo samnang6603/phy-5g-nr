@@ -8,9 +8,11 @@
 #include "../antenna_array/antenna.hpp"
 #include "../mobility/mobility.hpp"
 
+/************************* Constants *****************************/
 static constexpr float FULL_CIRCLE_DEGREES = 360.0f;
 static constexpr float HALF_CIRCLE_DEGREES = 180.0f;
 static constexpr std::size_t NUM_FIELD_SPHERICAL_ANGLES = 2; // 2 for F theta and F phi
+static constexpr std::size_t NUM_PATH_ANGLES = 4;
 
 // MATLAB-compatible mod(x, y) for positive y.
 static inline constexpr float MMOD(float x, float y) {
@@ -34,17 +36,21 @@ static inline constexpr float WRAP_ZENITH_ANGLE(float angle) {
 namespace channels::cdl::response {
 
     /***************** Type Definitions ************************/
-    struct Dim {
+    struct DimConfig {
         std::size_t T = 1;
-        std::size_t X = NULL;
-        std::size_t M;
-        std::size_t P;
-        std::size_t R;
+        std::size_t X = 1;
+        std::size_t M = 1;
+        std::size_t P = 1;
+        std::size_t R = 1;
+
+        std::size_t NumDim() const noexcept {
+            return T*X*M*P*R;
+        }
     };
 
     /***************** Function Declarations ********************/
-    static std::vector<float> compute_LoS_cluster_gain(
-        Dim& D,
+    static std::vector<std::complex<float>> compute_LoS_cluster_gain(
+        const DimConfig& dim_conf,
         const antenna::AntennaSystemConfig& ant_sys_conf,
         const pdp::DelayProfileConfig& pdp_conf,
         const std::vector<float>& phi,
@@ -52,6 +58,13 @@ namespace channels::cdl::response {
         const float XPR
     );
 
+    static std::vector<std::complex<float>> calculate_polarization_matrix(
+        const std::vector<float>& phi,
+        const float XPR,
+        const std::vector<PropagationCondition> cluster_type,
+        const PropagationCondition this_cluster_type
+    );
+    
     /***************** Function Implementations ********************/
     std::vector<float> generate_static_path_gains(
         const pdp::DelayProfileConfig& pdp_conf,
@@ -65,19 +78,19 @@ namespace channels::cdl::response {
         const std::size_t numRx = ant_sys_conf.NumOutputSignals;
         const bool hasLoS = pdp_conf.HasLoS;
 
-        Dim D{1,
-            0,
-            NUMBER_OF_RAYS_PER_CLUSTER,
-            numTx,
-            numRx,                    
-            };
+        DimConfig D{1,
+                    1,
+                    NUMBER_OF_RAYS_PER_CLUSTER,
+                    numTx,
+                    numRx,                    
+                };
 
         const std::vector<PropagationCondition>& cluster_types = pdp_conf.ClusterTypes;
         const std::size_t L = cluster_types.size();
         const float XPR = pdp_conf.XPR;
 
         if (hasLoS) {
-            std::vector<float> los_gain = compute_LoS_cluster_gain(
+            std::vector<std::complex<float>> Hstatic_los = compute_LoS_cluster_gain(
                 D, 
                 ant_sys_conf, 
                 pdp_conf, 
@@ -87,12 +100,14 @@ namespace channels::cdl::response {
             );
         }
 
+        std::vector<float> x(5,1.0f);
 
+        return x;
 
     }
 
-    static std::vector<float> compute_LoS_cluster_gain(
-        Dim& D,
+    static std::vector<std::complex<float>> compute_LoS_cluster_gain(
+        const DimConfig& dim_conf,
         const antenna::AntennaSystemConfig& ant_sys_conf,
         const pdp::DelayProfileConfig& pdp_conf,
         const std::vector<float>& phi,
@@ -100,8 +115,6 @@ namespace channels::cdl::response {
         const float XPR
     ) {
         // Compute cluster gain for LoS component
-
-        D.X = 0;
 
         const pdp::CDLCluster pdp_LoS_cluster = pdp_conf.Table[0];
         const float pow_linear = std::powf(10.0f, pdp_LoS_cluster.power_db/10.0f);
@@ -118,81 +131,217 @@ namespace channels::cdl::response {
         // TODO: Angle scaling section 7.7.5.1 to be implemented
 
         const float lambda_0 = ant_sys_conf.Wavelength();
+        const float lambda_0_inv = 1/lambda_0;
 
-        // ----------------------------------Processing for Tx-----------------------------------------------------------------
+        // -------------Processing for Tx----------------------------------------------------------------------------------------
         std::array<float, antenna::geometry::NUM_3D_AXIS> rhat_tx = 
-            antenna::geometry::get_LoS_spherical_unit_vector(phi_AoD, theta_ZoD);
+            antenna::geometry::get_LoS_spherical_unit_vector(phi_AoD, theta_ZoD); // angles of departure
 
-        // Get transmit antenna/subarray location vector
+        // Get Tx antenna/subarray location vector
         const antenna::AntennaArrayConfig& tx_ant_conf = ant_sys_conf.TransmitAntennaArray;
         const std::vector<float>& tx_radiator_pos = tx_ant_conf.FieldPattern.ElementPositions;
-        const antenna::geometry::PositionConfig& pos_conf = tx_ant_conf.Position;
+        const antenna::geometry::PositionConfig& tx_pos_conf = tx_ant_conf.Position;
 
         // Calculate the location vector dbar of Tx
         std::vector<float> dbar_tx(tx_radiator_pos.size());
         for (std::size_t i = 0; i < tx_radiator_pos.size(); i += 3) { // +3 stride over pos(x,y,z)
-            dbar_tx[i] = tx_radiator_pos[i]*lambda_0 + pos_conf.x;
-            dbar_tx[i + 1] = tx_radiator_pos[i + 1]*lambda_0 + pos_conf.y;
-            dbar_tx[i + 2] = tx_radiator_pos[i + 2]*lambda_0 + pos_conf.z;
+            dbar_tx[i] = tx_radiator_pos[i]*lambda_0 + tx_pos_conf.x;
+            dbar_tx[i + 1] = tx_radiator_pos[i + 1]*lambda_0 + tx_pos_conf.y;
+            dbar_tx[i + 2] = tx_radiator_pos[i + 2]*lambda_0 + tx_pos_conf.z;
         }
         
         // Allocation for Tx field term and location term
         const std::size_t numTx = ant_sys_conf.NumInputSignals;
-        const std::size_t term_size = NUMBER_OF_RAYS_PER_CLUSTER*numTx;
-        std::vector<std::complex<float>> tx_field_term(NUM_FIELD_SPHERICAL_ANGLES*term_size); 
-        std::vector<std::complex<float>> tx_loc_term(term_size);
+        std::vector<float> tx_field_term(numTx*NUM_FIELD_SPHERICAL_ANGLES);
+        std::vector<std::complex<float>> tx_loc_term(numTx*NUMBER_OF_RAYS_PER_CLUSTER);
 
-        //std::vector<float> field_term_tx(numTx*antenna::NUM_MAX_POLARIZATION);
-
-        // Compute 
+        // Compute field and location terms
         for (std::size_t s = 0; s < numTx; ++s) {
 
-            auto field_term_tx = antenna::field_pattern::compute_LoS_field_term(
+            float* field_term = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES;
+
+            antenna::field_pattern::compute_LoS_field_term(
+                field_term,
                 tx_ant_conf,
                 theta_ZoD, 
                 phi_AoD, 
                 s
             );
 
-            auto loc_term_tx = antenna::field_pattern::get_LoS_location_term(
+            std::complex<float>* loc_term = tx_loc_term.data() + s*NUMBER_OF_RAYS_PER_CLUSTER;
+
+            antenna::field_pattern::get_LoS_location_term(
+                loc_term,
                 rhat_tx,
                 dbar_tx,
-                lambda_0,
+                lambda_0_inv,
                 s
             );
+        }
+        //------------End Processing for Tx----------------------------------------------------------------------------------------
 
-            //std::cout << "Aha!" << std::endl;
+
+        //--------------Processing for Rx------------------------------------------------------------------------------------------
+        std::array<float, antenna::geometry::NUM_3D_AXIS> rhat_rx = 
+            antenna::geometry::get_LoS_spherical_unit_vector(phi_AoA, theta_ZoA); // angles of arrival
+
+        // Get Rx antenna/subarray location vector
+        const antenna::AntennaArrayConfig&rx_ant_conf = ant_sys_conf.ReceiveAntennaArray;
+        const std::vector<float>& rx_radiator_pos = rx_ant_conf.FieldPattern.ElementPositions;
+        const antenna::geometry::PositionConfig& rx_pos_conf = rx_ant_conf.Position;
+
+        // Calculate the location vector dbar of Tx
+        std::vector<float> dbar_rx(rx_radiator_pos.size());
+        for (std::size_t i = 0; i < rx_radiator_pos.size(); i += 3) { // +3 stride over pos(x,y,z)
+            dbar_rx[i] = rx_radiator_pos[i]*lambda_0 + rx_pos_conf.x;
+            dbar_rx[i + 1] = rx_radiator_pos[i + 1]*lambda_0 + rx_pos_conf.y;
+            dbar_rx[i + 2] = rx_radiator_pos[i + 2]*lambda_0 + rx_pos_conf.z;
         }
 
-        //-----------------------------------End Processing for Tx-----------------------------------------------------------------
-
+        // Allocation for Tx field term and location term
         const std::size_t numRx = ant_sys_conf.NumOutputSignals;
+        std::vector<float> rx_field_term(numRx*NUM_FIELD_SPHERICAL_ANGLES);
+        std::vector<std::complex<float>> rx_loc_term(numRx*NUMBER_OF_RAYS_PER_CLUSTER);
 
+        // Compute field and location terms
+        for (std::size_t u = 0; u < numRx; ++u) {
 
+            float* field_term = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES;
 
+            antenna::field_pattern::compute_LoS_field_term(
+                field_term,
+                rx_ant_conf,
+                theta_ZoA, 
+                phi_AoA, 
+                u
+            );
 
+            std::complex<float>* loc_term = rx_loc_term.data() + u*NUMBER_OF_RAYS_PER_CLUSTER;
 
-        std::vector<float> x(2,0.0f);
-        return x;
+            antenna::field_pattern::get_LoS_location_term(
+                loc_term,
+                rhat_rx,
+                dbar_rx,
+                lambda_0_inv,
+                u
+            );
+        }
+        //------------End Processing for Rx----------------------------------------------------------------------------------------
+        auto polterm = calculate_polarization_matrix(
+            phi, 
+            XPR, 
+            pdp_conf.ClusterTypes, 
+            PropagationCondition::LOS
+        );
 
-
-
+        
+        // Calculate the MONSTROUS Equation 7.5-28 excluding Doppler (the
+        // last term). Doppler is to be calculated in time-varying channel response
+        // First, compute all the field terms combined. In 7.5-28, all the 
+        // field terms are combined as below:
         /*
-        // Get corresponding ray coupling
-        const std::size_t* coup_ptr = coupling.data();
+            (thth): theta-theta, (thph): theta-phi
+            ksqrinv: 1/sqrt(kappa)
 
-        // Get corresponding initial phase
-        const float* phi_ptr = phi.data();
+        fieldTerms =
 
-        // Per cluster parameter
-        const float C_ASD = pdp_conf.AngleSpreads.C_ASD;
-        const float C_ASA = pdp_conf.AngleSpreads.C_ASA;
-        const float C_ZSD = pdp_conf.AngleSpreads.C_ZSD;
-        const float C_ZSA = pdp_conf.AngleSpreads.C_ZSA; */
+                 T
+        [F_rx_th]   [exp(jPhi_thth)          ksqrinv*exp(jPhi_thph]   [F_tx_th]
+        |       | * |                                             | * |       |
+        [F_rx_ph]   [ksqrinv*exp(jPhi_phth)         exp(jPhi_phph)]   [F_rx_ph]
+             
+        */
+        std::vector<std::complex<float>> Hstatic(numRx*numTx); // no rays consideration because this is LoS
+        std::complex<float>* h = Hstatic.data();
+        // This implmentation doesn't include matrix multiplication as in 7.5-28 but an expanded
+        // vectorized version for optimization.
+        // For this LoS, we really don't need to iterate across the rays, since all rays have uniform equal power.
+        // All it matters are the polarization matrix (polterm)
+        for (std::size_t u = 0; u < numRx; ++u) {
 
-        
-        
+            for (std::size_t s = 0; s < numTx; ++s) {
+
+                const std::size_t u_stride = u*NUM_FIELD_SPHERICAL_ANGLES;
+                const std::size_t s_stride = s*NUM_FIELD_SPHERICAL_ANGLES;
+
+                const float* rxft1 = rx_field_term.data() + u_stride;
+                const float* rxft2 = rx_field_term.data() + u_stride + 1;
+
+                const float* txft1 = tx_field_term.data() + s_stride;
+                const float* txft2 = tx_field_term.data() + s_stride + 1;
+
+                const std::complex<float> tmp0 = (*rxft1)*polterm[0];
+                const std::complex<float> tmp1 = (*rxft2)*polterm[1];
+                const std::complex<float> tmp2 = (*rxft1)*polterm[2];
+                const std::complex<float> tmp3 = (*rxft2)*polterm[3];
+                const std::complex<float> sum_field_terms = (tmp0 + tmp1)*(*txft1) + (tmp2 + tmp3)*(*txft2);
+
+                /*
+                  Then, compute all the location terms combined. In 7.5-28, all the 
+                  location terms are combined as below (excluding Doppler term)
+                
+                                    T                            T
+                             /     r_rx*dbar_rx  \        /     r_tx*dbar_tx  \    
+                         exp| j2pi--------------- | * exp| j2pi--------------- |
+                             \       lambda_0    /        \       lambda_0    / 
+            
+                */
+
+                const std::complex<float>* rxloc = rx_loc_term.data() + u*NUMBER_OF_RAYS_PER_CLUSTER;
+                const std::complex<float>* txloc = tx_loc_term.data() + s*NUMBER_OF_RAYS_PER_CLUSTER;
+
+                *h++ = (*rxloc++)*(*txloc++)*sum_field_terms;
+            }
+        }
+        return Hstatic;
+    }
+
+
+    static std::vector<std::complex<float>> calculate_polarization_matrix(
+        const std::vector<float>& phi,
+        const float XPR,
+        const std::vector<PropagationCondition> cluster_type,
+        const PropagationCondition this_cluster_type
+    ) {
+        // Calculate polarization matrix for the specified cluster type
+        // The Phi (Angular interaction) is arranged like this:
+        // | theta-theta |
+        // |   phi-theta |
+        // | theta-phi   |
+        // |   phi-phi   |
+
+        std::size_t num_cluster = cluster_type.size();
+        std::vector<std::complex<float>> cphi(num_cluster);
+        std::size_t count = 0;
+        for (std::size_t i = 0; i < num_cluster; ++i) {
+            if (cluster_type[i] == this_cluster_type) {
+                cphi[i] = std::complex{
+                    std::cos(phi[i]), 
+                    std::sin(phi[i])
+                };
+                ++count;
+            }
+        }
+
+        std::vector<std::complex<float>> polmat(count*NUM_PATH_ANGLES);
+
+        switch (this_cluster_type) {
+            case PropagationCondition::LOS:
+
+                // For LoS case, it is really simple
+                // only theta-theta and phi-phi matter, no cross angle
+                polmat[0] = cphi[0];
+                polmat[3] = -cphi[0]; // phi-phi is negative
+
+            case PropagationCondition::NLOS:
+
+
+            default:
+
+        }
+
+        return polmat;
 
     }
 
-}
+} // namespace channels::cdl::response

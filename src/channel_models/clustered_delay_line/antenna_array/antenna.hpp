@@ -251,14 +251,16 @@ namespace channels::cdl::antenna {
             const AntennaArrayConfig& ant_array_conf
         );
 
-        std::vector<float> compute_LoS_field_term(
+        void compute_LoS_field_term(
+            float* field_term,
             const antenna::AntennaArrayConfig& ant_array_conf,
             const float theta,
             const float phi,
             const std::size_t ant_idx
         );
 
-        std::vector<std::complex<float>> get_LoS_location_term(
+        void get_LoS_location_term(
+            std::complex<float>* loc_term,
             const std::array<float, geometry::NUM_3D_AXIS>& rhat,
             const std::vector<float>& dbar,
             const float lambda_0,

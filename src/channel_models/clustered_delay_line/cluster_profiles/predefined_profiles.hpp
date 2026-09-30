@@ -10,6 +10,7 @@ constexpr uint8_t CDL_B_NUM_CLUSTERS = 23;
 constexpr uint8_t CDL_C_NUM_CLUSTERS = 24;
 constexpr uint8_t CDL_D_NUM_CLUSTERS = 14; // including LOS component
 constexpr uint8_t CDL_E_NUM_CLUSTERS = 15; // including LOS component
+constexpr uint8_t CDL_MAX_SUPPORTED_NUM_CLUSTERS = 50; // including LOS component
 
 // Kept for compatibility/documentation.
 // Each CDLCluster stores:
@@ -17,8 +18,6 @@ constexpr uint8_t CDL_E_NUM_CLUSTERS = 15; // including LOS component
 constexpr uint8_t CDL_PDP_NUM_PARAMS_COLS = 6;
 
 namespace channels::cdl::pdp {
-
-enum class ClusterType {LOS, NLOS};
 
 struct CDLCluster {
     float normalized_delay;

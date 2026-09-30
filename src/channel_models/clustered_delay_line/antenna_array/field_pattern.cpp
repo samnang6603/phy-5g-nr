@@ -48,7 +48,8 @@ namespace channels::cdl::antenna::field_pattern {
         const float zeta
     );
 
-    std::vector<float> compute_LoS_field_term(
+    void compute_LoS_field_term(
+        float* field_term,
         const antenna::AntennaArrayConfig& ant_array_conf,
         const float theta,
         const float phi,
@@ -188,18 +189,17 @@ namespace channels::cdl::antenna::field_pattern {
         // fieldTerm1 = |               | * F
         //              [sinpsi   cospsi]
         // Alternatively, simplied form, hand derived for optimization
-        std::vector<float> field_term(NUM_MAX_POLARIZATION);
 
         field_term[0] = F[0]*cospsi - F[1]*sinpsi;
         field_term[1] = F[0]*sinpsi + F[1]*cospsi;
 
-        return field_term;
     };
 
-    std::vector<std::complex<float>> get_LoS_location_term(
+    void get_LoS_location_term(
+        std::complex<float>* loc_term,
         const std::array<float, geometry::NUM_3D_AXIS>& rhat,
         const std::vector<float>& dbar,
-        const float lambda_0,
+        const float lambda_0_inv,
         const std::size_t ant_idx
     ) {
         // Get location term
@@ -207,13 +207,10 @@ namespace channels::cdl::antenna::field_pattern {
         const float v1 = rhat[0]*dbar[ant_idx*geometry::NUM_3D_AXIS];
         const float v2 = rhat[1]*dbar[ant_idx*geometry::NUM_3D_AXIS + 1];
         const float v3 = rhat[2]*dbar[ant_idx*geometry::NUM_3D_AXIS + 2];
-        const float sumv = TWO_PI*(v1 + v2 + v3)/lambda_0;
+        const float sumv = TWO_PI*(v1 + v2 + v3)*lambda_0_inv;
         const std::complex<float> c(std::cos(sumv), std::sin(sumv));
 
-        std::vector<std::complex<float>> loc_term(NUMBER_OF_RAYS_PER_CLUSTER, c);
-
-        return loc_term;
-
+        std::fill(loc_term, loc_term + NUMBER_OF_RAYS_PER_CLUSTER, c);
     }
 
     float get_polarization_angle(
