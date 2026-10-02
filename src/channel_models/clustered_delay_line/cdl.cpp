@@ -76,7 +76,7 @@ namespace channels::cdl {
         );
 
         // Step 7: generate static CDL channel
-        std::vector<float> Hstatic = response::generate_static_path_gains(
+        std::vector<float> H_static = response::generate_static_path_gains(
             DelayProfile, AntennaSystem, ray_coupling, phi);
 
         // Step 8: generate initial time-varying CDL channel

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ranges>
 #include <array>
 #include <vector>
 #include "../../channel_models_common.hpp"
@@ -64,6 +65,30 @@ namespace channels::cdl::antenna {
             float beta  = 0.0f; // downtilt (z-axis)
             float gamma = 0.0f; // slant (y-axis)
         };
+
+        namespace los {
+
+            struct SphericalDirection {
+                std::array<float, NUM_3D_AXIS> rhat;
+
+                float sintheta;
+                float costheta;
+                float sinphi;
+                float cosphi;
+            };
+        } // namespace los
+
+        namespace nlos {
+
+            struct SphericalDirections {
+                std::vector<float> rhat;
+
+                std::vector<float> sintheta;
+                std::vector<float> costheta;
+                std::vector<float> sinphi;
+                std::vector<float> cosphi;
+            };
+        } // namespace nlos
 
     } // namespace geometry
 
@@ -228,43 +253,106 @@ namespace channels::cdl::antenna {
             return M;
         }
 
-        inline std::array<float, NUM_3D_AXIS> get_LoS_spherical_unit_vector(float phi, float theta) {
+        namespace los {
 
-            // Get spherical unit vector only for LoS component
+            inline SphericalDirection get_spherical_unit_vector(const float phi, const float theta) {
 
-            const float sintheta = std::sin(DEG2RAD(theta));
-            std::array<float, NUM_3D_AXIS> rhat;
+                // Get spherical unit vector only for LoS component
 
-            rhat[0] = sintheta*std::cos(DEG2RAD(phi));
-            rhat[1] = sintheta*std::sin(DEG2RAD(phi));
-            rhat[2] = std::cos(DEG2RAD(theta));
-            return rhat;
-        }
+                const float theta_rad = DEG2RAD(theta);
+                const float phi_rad = DEG2RAD(phi);
 
+                SphericalDirection sph_dir_conf;
 
+                sph_dir_conf.sinphi = std::sin(phi_rad);
+                sph_dir_conf.cosphi = std::cos(phi_rad);
+                sph_dir_conf.sintheta = std::sin(theta_rad);
+                sph_dir_conf.costheta = std::cos(theta_rad);
+
+                sph_dir_conf.rhat[0] = sph_dir_conf.sintheta*sph_dir_conf.cosphi;
+                sph_dir_conf.rhat[1] = sph_dir_conf.sintheta*sph_dir_conf.sinphi;
+                sph_dir_conf.rhat[2] = sph_dir_conf.costheta;
+                return sph_dir_conf;
+            }
+        } // namespace los
+
+        namespace nlos {
+
+            inline SphericalDirections get_spherical_unit_vectors(const std::vector<float>& phi, const std::vector<float>& theta) {
+
+                // Get spherical unit vector only for NLoS component
+
+                SphericalDirections sph_dir_conf;
+
+                sph_dir_conf.rhat.resize(NUM_3D_AXIS*phi.size());
+                sph_dir_conf.sintheta.resize(phi.size());
+                sph_dir_conf.costheta.resize(phi.size());
+                sph_dir_conf.sinphi.resize(phi.size());
+                sph_dir_conf.cosphi.resize(phi.size());
+
+                float* rhat_ptr = sph_dir_conf.rhat.data();
+                float* st_ptr = sph_dir_conf.sintheta.data();
+                float* ct_ptr = sph_dir_conf.costheta.data();
+                float* sp_ptr = sph_dir_conf.sinphi.data();
+                float* cp_ptr = sph_dir_conf.cosphi.data();
+
+                for (const auto& [p, t] : std::views::zip(phi, theta)) {
+
+                    const float t_rad = DEG2RAD(t);
+                    const float p_rad = DEG2RAD(p);
+
+                    *st_ptr = std::sin(t_rad);;
+                    *ct_ptr = std::cos(t_rad);
+                    *sp_ptr = std::sin(p_rad);
+                    *cp_ptr = std::cos(p_rad);
+
+                    *rhat_ptr++ = (*st_ptr)*(*cp_ptr);
+                    *rhat_ptr++ = (*st_ptr)*(*sp_ptr);
+                    *rhat_ptr++ = *ct_ptr;
+                    
+                    ++st_ptr;
+                    ++ct_ptr;
+                    ++sp_ptr;
+                    ++st_ptr;
+                }
+                return sph_dir_conf;
+            }
+        } // namespace nlos
     }
 
     namespace field_pattern {
+
+        namespace los {
+            void compute_field_term(
+                float* field_term,
+                const antenna::AntennaArrayConfig& ant_array_conf,
+                const geometry::los::SphericalDirection sph_dir_conf,
+                const std::size_t ant_idx
+            );
+
+            void get_location_term(
+                std::complex<float>* loc_term,
+                const std::array<float, geometry::NUM_3D_AXIS>& rhat,
+                const std::vector<float>& dbar,
+                const float lambda_0,
+                const std::size_t ant_idx
+            );
+        } // namespace los
+
+        namespace nlos {
+            void compute_field_term(
+                float* field_term,
+                const antenna::AntennaArrayConfig& ant_array_conf,
+                const float theta,
+                const float phi,
+                const std::size_t ant_idx
+            );
+        }
 
         float get_polarization_angle(
             std::size_t antennaIdx,
             const AntennaArrayConfig& ant_array_conf
         );
 
-        void compute_LoS_field_term(
-            float* field_term,
-            const antenna::AntennaArrayConfig& ant_array_conf,
-            const float theta,
-            const float phi,
-            const std::size_t ant_idx
-        );
-
-        void get_LoS_location_term(
-            std::complex<float>* loc_term,
-            const std::array<float, geometry::NUM_3D_AXIS>& rhat,
-            const std::vector<float>& dbar,
-            const float lambda_0,
-            const std::size_t ant_idx
-        );
     }
 }
