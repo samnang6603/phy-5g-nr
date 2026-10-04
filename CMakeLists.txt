@@ -114,7 +114,12 @@ set_tests_properties(ldpc_simulation PROPERTIES
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE 
-    -Wall -Wextra
+    -Wall 
+    -Wextra
+    #-O3 -march=native 
+    #-Rpass=loop-vectorize 
+    #-Rpass-missed=loop-vectorize 
+    #-Rpass-analysis=loop-vectorize
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

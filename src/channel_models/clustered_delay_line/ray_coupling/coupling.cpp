@@ -4,11 +4,6 @@
 #include "coupling.hpp"
 #include "../../channel_models_common.hpp"
 
-// Coupling permutation
-// 1. AoD -> AoA coupling
-// 2: AoD -> ZoA coupling
-// 3. AoD -> ZoD coupling
-constexpr uint16_t COUPLING_PERMUTATIONS = 3;
 
 namespace channels::cdl::ray {
 

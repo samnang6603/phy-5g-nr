@@ -22,6 +22,19 @@ static constexpr float TR38_901_G_MAX = 8.0f;           // Maximum directional g
 static constexpr float PSI_DEGENERATE_THRESH = 1E-5f;   // Degenerate tolerance protection
 static constexpr float TWO_PI = M_PI*2.0f;
 
+/***************** Type Definitions ************/
+struct PhiPrimeThetaPrimeData {
+
+    std::vector<float> phi_prime_deg;
+    std::vector<float> cos_phi_prime;
+    std::vector<float> sin_phi_prime;
+
+    std::vector<float> theta_prime_deg;
+    std::vector<float> cos_theta_prime;
+    std::vector<float> sin_theta_prime;
+
+};
+
 }
 
 /***************** Function Implementations ************/
@@ -29,17 +42,37 @@ namespace channels::cdl::antenna::field_pattern {
 
     template<ElementPatternOption PowMode, PolarizationModelOption PolMode>
     static std::vector<float> compute_pattern_kernel(
-        const std::vector<float>& theta_p,
-        const std::vector<float>& phi_p,
+        const std::vector<float>& theta_prime,
+        const std::vector<float>& phi_prime,
         const float cos_zeta,
         const float sin_zeta
+    );
+
+    template<ElementPatternOption PowMode, PolarizationModelOption PolMode>
+    static std::vector<float> compute_pattern_kernel_2(
+        const PhiPrimeThetaPrimeData& pt_dat,
+        const float cos_zeta,
+        const float sin_zeta
+    );
+
+    template<ElementPatternOption PowMode>
+    static float compute_power_pattern(
+        const float theta_prime_deg,
+        const float phi_prime_deg
     );
 
     static std::vector<float> compute_polarization_field_pattern(
         const ElementPatternOption pow_mode,
         const PolarizationModelOption pol_mode,
-        const std::vector<float>& theta_p,
-        const std::vector<float>& phi_p,
+        const std::vector<float>& theta_prime,
+        const std::vector<float>& phi_prime,
+        const float zeta
+    );
+
+    static std::vector<float> compute_polarization_field_pattern_2(
+        const ElementPatternOption pow_mode,
+        const PolarizationModelOption pol_mode,
+        const PhiPrimeThetaPrimeData& pt_dat,
         const float zeta
     );
 
@@ -176,39 +209,46 @@ namespace channels::cdl::antenna::field_pattern {
                 phi_prime = 0.0f;
             }
 
+            const float theta_prime_deg = RAD2DEG(theta_prime);
+            const float phi_prime_deg = RAD2DEG(phi_prime);
+
+            PhiPrimeThetaPrimeData pt_dat;
+            pt_dat.theta_prime_deg = {theta_prime_deg};
+            pt_dat.phi_prime_deg = {phi_prime_deg};
+
             // Compute psi, the angular displacement between two pairs of
             // unit vectors, according to Equation 7.1-12
-            // First, we need to find the unit vector of theta, phi, and theta_p.
+            // First, we need to find the unit vector of theta, phi, and theta_prime.
             // These are the Cartesian representation of the spherical unit vectors
-            const float costheta = sph_dir_conf.costheta;
-            const float sintheta = sph_dir_conf.sintheta;
+            const float cos_theta = sph_dir_conf.cos_theta;
+            const float sin_theta = sph_dir_conf.sin_theta;
 
-            const float cosphi = sph_dir_conf.cosphi;
-            const float sinphi = sph_dir_conf.sinphi;
+            const float cos_phi = sph_dir_conf.cos_phi;
+            const float sin_phi = sph_dir_conf.sin_phi;
 
-            const float cosphi_prime = std::cos(phi_prime);
-            const float sinphi_prime = std::sin(phi_prime);
+            const float cos_phi_prime = std::cos(phi_prime);
+            const float sin_phi_prime = std::sin(phi_prime);
 
-            const float costheta_prime = std::cos(theta_prime);
-            const float sintheta_prime = std::sin(theta_prime);
+            const float cos_theta_prime = std::cos(theta_prime);
+            const float sin_theta_prime = std::sin(theta_prime);
 
             // The unit vectors theta_hat, phi_hat, and theta_prime_hat
             const std::array<float, geometry::NUM_3D_AXIS> theta_hat = {
-                costheta*cosphi,
-                costheta*sinphi, 
-                -sintheta
+                cos_theta*cos_phi,
+                cos_theta*sin_phi, 
+                -sin_theta
             };
 
             const std::array<float, geometry::NUM_3D_AXIS> phi_hat = {
-                -sinphi, 
-                cosphi, 
+                -sin_phi, 
+                cos_phi, 
                 0.0f
             };
 
             const std::array<float, geometry::NUM_3D_AXIS> theta_prime_hat = {
-                costheta_prime*cosphi_prime,
-                costheta_prime*sinphi_prime,
-                -sintheta_prime
+                cos_theta_prime*cos_phi_prime,
+                cos_theta_prime*sin_phi_prime,
+                -sin_theta_prime
             };
 
             // Using Equation 7.1-12, simplified by hand to get the least computational
@@ -225,20 +265,34 @@ namespace channels::cdl::antenna::field_pattern {
             const PatternConfig& pattern_conf = ant_array_conf.FieldPattern.FieldEffect;
             const PolarizationAnglesConfig& pol_conf = ant_array_conf.PolarizationAngles;
 
-            const std::vector<float> theta_prime_vec = {RAD2DEG(theta_prime)};
-            const std::vector<float> phi_prime_vec   = {RAD2DEG(phi_prime)};
+            //const std::vector<float> theta_prime_vec = {RAD2DEG(theta_prime)};
+            //const std::vector<float> phi_prime_vec   = {RAD2DEG(phi_prime)};
+
+            pt_dat.cos_theta_prime = {cos_theta_prime};
+            pt_dat.sin_theta_prime = {sin_theta_prime};
+            pt_dat.cos_phi_prime = {cos_phi_prime};
+            pt_dat.sin_phi_prime = {sin_phi_prime};
 
             // Element's antenna index polarization angle selector
             const float zeta = pol_conf.PolarizationOrientationMap[geometry::NUM_3D_AXIS*ant_idx + 2];
 
             // Compute field pattern
-            std::vector<float> F = compute_polarization_field_pattern(
+            const std::vector<float> F = compute_polarization_field_pattern_2(
+                pattern_conf.Element, 
+                pattern_conf.PolarizationModel, 
+                pt_dat, 
+                zeta
+            );
+
+#if 0
+            const std::vector<float> F = compute_polarization_field_pattern(
                 pattern_conf.Element, 
                 pattern_conf.PolarizationModel,
                 theta_prime_vec,
                 phi_prime_vec,
                 zeta
             );
+#endif
 
             // Finally, we have everything we need to compute fieldTerm in GCS,
             // using equation 7.1-11
@@ -295,16 +349,16 @@ namespace channels::cdl::antenna::field_pattern {
     static std::vector<float> compute_polarization_field_pattern(
         const ElementPatternOption pow_mode,
         const PolarizationModelOption pol_mode,
-        const std::vector<float>& theta_p,
-        const std::vector<float>& phi_p,
+        const std::vector<float>& theta_prime,
+        const std::vector<float>& phi_prime,
         const float zeta
     ) {
         // Compute field pattern of elements in LCS
 
-        if (theta_p.size() != phi_p.size()) {
+        if (theta_prime.size() != phi_prime.size()) {
             throw std::invalid_argument(
                 "compute_polarization_field_pattern >>> "
-                "theta_p and phi_p must have the same size"
+                "theta_prime and phi_prime must have the same size"
             );
         }
 
@@ -322,8 +376,8 @@ namespace channels::cdl::antenna::field_pattern {
                             ElementPatternOption::TR_38_901,
                             PolarizationModelOption::MODEL1
                         >(
-                            theta_p,
-                            phi_p,
+                            theta_prime,
+                            phi_prime,
                             cos_zeta,
                             sin_zeta
                         );
@@ -334,8 +388,8 @@ namespace channels::cdl::antenna::field_pattern {
                             ElementPatternOption::ISOTROPIC,
                             PolarizationModelOption::MODEL1
                         >(
-                            theta_p,
-                            phi_p,
+                            theta_prime,
+                            phi_prime,
                             cos_zeta,
                             sin_zeta
                         );                        
@@ -355,8 +409,8 @@ namespace channels::cdl::antenna::field_pattern {
                             ElementPatternOption::TR_38_901,
                             PolarizationModelOption::MODEL2
                         >(
-                            theta_p,
-                            phi_p,
+                            theta_prime,
+                            phi_prime,
                             cos_zeta,
                             sin_zeta
                         );
@@ -367,8 +421,101 @@ namespace channels::cdl::antenna::field_pattern {
                             ElementPatternOption::ISOTROPIC,
                             PolarizationModelOption::MODEL2
                         >(
-                            theta_p,
-                            phi_p,
+                            theta_prime,
+                            phi_prime,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    default:
+                        throw std::invalid_argument(
+                            "compute_power_pattern >>> Invalid power pattern"
+                        );
+                }
+                break;
+
+            default:
+                throw std::invalid_argument(
+                    "compute_polarization >>> Invalid polarization model"
+                );
+        }
+
+        return F;
+    }
+
+    static std::vector<float> compute_polarization_field_pattern_2(
+        const ElementPatternOption pow_mode,
+        const PolarizationModelOption pol_mode,
+        const PhiPrimeThetaPrimeData& pt_dat,
+        const float zeta
+    ) {
+        // Compute field pattern of elements in LCS
+
+        if (pt_dat.theta_prime_deg.size() != pt_dat.phi_prime_deg.size()) {
+            throw std::invalid_argument(
+                "compute_polarization_field_pattern >>> "
+                "theta_prime and phi_prime must have the same size"
+            );
+        }
+
+        std::vector<float> F; // Field pattern output
+
+        const float zeta_r = DEG2RAD(zeta);
+        const float cos_zeta = std::cos(zeta_r);
+        const float sin_zeta = std::sin(zeta_r);
+
+        switch (pol_mode) {
+            case PolarizationModelOption::MODEL1:
+                switch (pow_mode) {
+                    case ElementPatternOption::TR_38_901:
+                        F = compute_pattern_kernel_2<
+                            ElementPatternOption::TR_38_901,
+                            PolarizationModelOption::MODEL1
+                        >(
+                            pt_dat,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    case ElementPatternOption::ISOTROPIC:
+                        F = compute_pattern_kernel_2<
+                            ElementPatternOption::ISOTROPIC,
+                            PolarizationModelOption::MODEL1
+                        >(
+                            pt_dat,
+                            cos_zeta,
+                            sin_zeta
+                        );                        
+                        break;
+
+                    default:
+                        throw std::invalid_argument(
+                            "compute_polarization_field_pattern >>> Invalid power pattern"
+                        );
+                }
+                break;
+
+            case PolarizationModelOption::MODEL2:
+                switch (pow_mode) {
+                    case ElementPatternOption::TR_38_901:
+                        F = compute_pattern_kernel_2<
+                            ElementPatternOption::TR_38_901,
+                            PolarizationModelOption::MODEL2
+                        >(
+                            pt_dat,
+                            cos_zeta,
+                            sin_zeta
+                        );
+                        break;
+
+                    case ElementPatternOption::ISOTROPIC:
+                        F = compute_pattern_kernel_2<
+                            ElementPatternOption::ISOTROPIC,
+                            PolarizationModelOption::MODEL2
+                        >(
+                            pt_dat,
                             cos_zeta,
                             sin_zeta
                         );
@@ -392,8 +539,8 @@ namespace channels::cdl::antenna::field_pattern {
 
     template<ElementPatternOption PowMode>
     static float compute_power_pattern(
-        const float theta_p_deg,
-        const float phi_p_deg
+        const float theta_prime_deg,
+        const float phi_prime_deg
     ) {
         // Compute A_prime, antenna gain pattern Antenna element radiation
         // pattern is described in TR 38.901 Section 7.3 table 7.3-1
@@ -408,12 +555,12 @@ namespace channels::cdl::antenna::field_pattern {
             PowMode == ElementPatternOption::TR_38_901
         ) {
             // Antenna element vertical radiation pattern (dB)
-            const float tmp0 = (theta_p_deg - 90)*TR38_901_THETA_3dB_INV;
+            const float tmp0 = (theta_prime_deg - 90)*TR38_901_THETA_3dB_INV;
             const float tmp1 = 12.0f*tmp0*tmp0;
             const float A_EV = -std::min(tmp1, TR38_901_SLA_V);
 
             // Antenna element horizontal radiation pattern (dB)
-            const float tmp2 = phi_p_deg*TR38_901_PHI_3dB_INV;
+            const float tmp2 = phi_prime_deg*TR38_901_PHI_3dB_INV;
             const float tmp3 = 12.0f*tmp2*tmp2;
             const float A_EH = -std::min(tmp3, TR38_901_A_M);
 
@@ -421,7 +568,7 @@ namespace channels::cdl::antenna::field_pattern {
             const float tmp4 = -std::min(-(A_EV + A_EH), TR38_901_A_M);
 
             // Incorporate maximum gain and convert to linear power
-            return std::pow(10.0f, (tmp4 + TR38_901_G_MAX)*0.1f);
+            return std::pow(10.0f, (tmp4 + TR38_901_G_MAX)*0.05f); // includes the sqrt into 0.05f
         }
 
         if constexpr (PowMode == ElementPatternOption::ISOTROPIC) {
@@ -432,8 +579,8 @@ namespace channels::cdl::antenna::field_pattern {
 
     template<ElementPatternOption PowMode, PolarizationModelOption PolMode>
     static std::vector<float> compute_pattern_kernel(
-        const std::vector<float>& theta_p,
-        const std::vector<float>& phi_p,
+        const std::vector<float>& theta_prime,
+        const std::vector<float>& phi_prime,
         const float cos_zeta,
         const float sin_zeta
     ) {
@@ -445,14 +592,13 @@ namespace channels::cdl::antenna::field_pattern {
             "compute_polarization >>> Invalid polarization model"
         );
 
-        const std::size_t theta_len = theta_p.size();
+        const std::size_t theta_len = theta_prime.size();
 
         std::vector<float> F(NUM_MAX_POLARIZATION);
 
         for (std::size_t i = 0; i < theta_len; ++i) {
 
-            const float prad = compute_power_pattern<PowMode>(theta_p[i], phi_p[i]);
-            const float prad_sqrt = std::sqrt(prad);
+            const float prad_sqrt = compute_power_pattern<PowMode>(theta_prime[i], phi_prime[i]);
 
             if constexpr (PolMode == PolarizationModelOption::MODEL1) {
                 // TR 38.901 7.3.2 Model-1
@@ -460,11 +606,11 @@ namespace channels::cdl::antenna::field_pattern {
                 // Rotation matrix elements cos(Psi) and sin(Psi) for an angular
                 // displacement of Psi due to the orientation of the LCS w.r.t. the GCS
                 // See Equation 7.3-3 cos(phi) and sin(phi)
-                const float theta_p_r = DEG2RAD(theta_p[i]);
+                const float theta_p_r = DEG2RAD(theta_prime[i]);
                 const float sin_theta = std::sin(theta_p_r);
                 const float cos_theta = std::cos(theta_p_r);
 
-                const float phi_p_r = DEG2RAD(phi_p[i]);
+                const float phi_p_r = DEG2RAD(phi_prime[i]);
                 const float sin_phi = std::sin(phi_p_r);
                 const float cos_phi = std::cos(phi_p_r);
 
@@ -480,9 +626,99 @@ namespace channels::cdl::antenna::field_pattern {
                 float sin_psi = (sin_zeta*cos_phi)*denom_inv;
 
                 // Assume vertical polarization in cases where the transformation
-                // degenerates, this is, when theta_p is near zeta or 180-zeta and
-                // phi_p is near -90 or 90, respectively. When zeta = 0/180, any
-                // value of phi_p makes the transformation degenerate. The threshold
+                // degenerates, this is, when theta_prime is near zeta or 180-zeta and
+                // phi_prime is near -90 or 90, respectively. When zeta = 0/180, any
+                // value of phi_prime makes the transformation degenerate. The threshold
+                // (10^-5) is the upper bound of the magnitude error outside a region of
+                // radius ~10^-4 degrees around the singularity. Within that region, the
+                // polarization angle error can be arbitrary.
+                const float hypot = std::sqrt(cos_psi*cos_psi + sin_psi*sin_psi);
+
+                const bool degen =
+                    std::isnan(cos_psi) ||
+                    std::isnan(sin_psi) ||
+                    (std::fabs(hypot - 1.0f) > PSI_DEGENERATE_THRESH);
+
+                if (degen) {
+                    cos_psi = 1.0f;
+                    sin_psi = 0.0f;
+                }
+
+                // Equation 7.3-3 evaluated assuming F_phi_pp = 0
+                /*
+                    [F_theta_p]     [cos(phi) -sin(phi)]   [F_theta_pp]
+                    |         |  =  |                  | * |          |
+                    [ F_phi_p ]     [sin(phi)  cos(phi)]   [ F_phi_pp ]
+                */
+                F[i] = prad_sqrt*cos_psi;
+                F[i + theta_len] = prad_sqrt*sin_psi;
+            }
+
+            if constexpr (PolMode == PolarizationModelOption::MODEL2) {
+
+                // TR 38.901 Equation 7.3-4
+                F[i] = prad_sqrt*cos_zeta;
+
+                // TR 38.901 Equation 7.3-5
+                F[i + theta_len] = prad_sqrt*sin_zeta;
+            }
+        }
+
+        return F;
+    }
+
+    template<ElementPatternOption PowMode, PolarizationModelOption PolMode>
+    static std::vector<float> compute_pattern_kernel_2(
+        const PhiPrimeThetaPrimeData& pt_dat,
+        const float cos_zeta,
+        const float sin_zeta
+    ) {
+        // Compute field pattern kernel
+
+        static_assert(
+            PolMode == PolarizationModelOption::MODEL1 ||
+            PolMode == PolarizationModelOption::MODEL2,
+            "compute_polarization >>> Invalid polarization model"
+        );
+
+        const std::size_t theta_len = pt_dat.cos_theta_prime.size();
+
+        std::vector<float> F(NUM_MAX_POLARIZATION);
+
+        for (std::size_t i = 0; i < theta_len; ++i) {
+
+            const float prad_sqrt = compute_power_pattern<PowMode>(
+                pt_dat.theta_prime_deg[i], 
+                pt_dat.phi_prime_deg[i]
+            );
+
+            if constexpr (PolMode == PolarizationModelOption::MODEL1) {
+                // TR 38.901 7.3.2 Model-1
+
+                // Rotation matrix elements cos(Psi) and sin(Psi) for an angular
+                // displacement of Psi due to the orientation of the LCS w.r.t. the GCS
+                // See Equation 7.3-3 cos(phi) and sin(phi)
+                const float sin_theta_prime = pt_dat.sin_theta_prime[i];
+                const float cos_theta_prime = pt_dat.cos_theta_prime[i];
+
+                const float sin_phi_prime = pt_dat.sin_phi_prime[i];
+                const float cos_phi_prime = pt_dat.cos_phi_prime[i];
+
+                const float tmp = sin_zeta*sin_phi_prime;
+                const float tmp0 = cos_zeta*cos_theta_prime;
+                const float tmp1 = tmp*sin_theta_prime;
+                const float tmp2 = (tmp0 - tmp1);
+
+                const float denom = std::sqrt(1.0f - tmp2*tmp2);
+                const float denom_inv = 1.0f/denom;
+
+                float cos_psi = (cos_zeta*sin_theta_prime + tmp*cos_theta_prime)*denom_inv;
+                float sin_psi = (sin_zeta*cos_phi_prime)*denom_inv;
+
+                // Assume vertical polarization in cases where the transformation
+                // degenerates, this is, when theta_prime is near zeta or 180-zeta and
+                // phi_prime is near -90 or 90, respectively. When zeta = 0/180, any
+                // value of phi_prime makes the transformation degenerate. The threshold
                 // (10^-5) is the upper bound of the magnitude error outside a region of
                 // radius ~10^-4 degrees around the singularity. Within that region, the
                 // polarization angle error can be arbitrary.

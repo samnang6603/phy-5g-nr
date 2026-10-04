@@ -71,10 +71,10 @@ namespace channels::cdl::antenna {
             struct SphericalDirection {
                 std::array<float, NUM_3D_AXIS> rhat;
 
-                float sintheta;
-                float costheta;
-                float sinphi;
-                float cosphi;
+                float sin_theta;
+                float cos_theta;
+                float sin_phi;
+                float cos_phi;
             };
         } // namespace los
 
@@ -83,10 +83,10 @@ namespace channels::cdl::antenna {
             struct SphericalDirections {
                 std::vector<float> rhat;
 
-                std::vector<float> sintheta;
-                std::vector<float> costheta;
-                std::vector<float> sinphi;
-                std::vector<float> cosphi;
+                std::vector<float> sin_theta;
+                std::vector<float> cos_theta;
+                std::vector<float> sin_phi;
+                std::vector<float> cos_phi;
             };
         } // namespace nlos
 
@@ -264,14 +264,14 @@ namespace channels::cdl::antenna {
 
                 SphericalDirection sph_dir_conf;
 
-                sph_dir_conf.sinphi = std::sin(phi_rad);
-                sph_dir_conf.cosphi = std::cos(phi_rad);
-                sph_dir_conf.sintheta = std::sin(theta_rad);
-                sph_dir_conf.costheta = std::cos(theta_rad);
+                sph_dir_conf.sin_phi = std::sin(phi_rad);
+                sph_dir_conf.cos_phi = std::cos(phi_rad);
+                sph_dir_conf.sin_theta = std::sin(theta_rad);
+                sph_dir_conf.cos_theta = std::cos(theta_rad);
 
-                sph_dir_conf.rhat[0] = sph_dir_conf.sintheta*sph_dir_conf.cosphi;
-                sph_dir_conf.rhat[1] = sph_dir_conf.sintheta*sph_dir_conf.sinphi;
-                sph_dir_conf.rhat[2] = sph_dir_conf.costheta;
+                sph_dir_conf.rhat[0] = sph_dir_conf.sin_theta*sph_dir_conf.cos_phi;
+                sph_dir_conf.rhat[1] = sph_dir_conf.sin_theta*sph_dir_conf.sin_phi;
+                sph_dir_conf.rhat[2] = sph_dir_conf.cos_theta;
                 return sph_dir_conf;
             }
         } // namespace los
@@ -285,16 +285,16 @@ namespace channels::cdl::antenna {
                 SphericalDirections sph_dir_conf;
 
                 sph_dir_conf.rhat.resize(NUM_3D_AXIS*phi.size());
-                sph_dir_conf.sintheta.resize(phi.size());
-                sph_dir_conf.costheta.resize(phi.size());
-                sph_dir_conf.sinphi.resize(phi.size());
-                sph_dir_conf.cosphi.resize(phi.size());
+                sph_dir_conf.sin_theta.resize(phi.size());
+                sph_dir_conf.cos_theta.resize(phi.size());
+                sph_dir_conf.sin_phi.resize(phi.size());
+                sph_dir_conf.cos_phi.resize(phi.size());
 
                 float* rhat_ptr = sph_dir_conf.rhat.data();
-                float* st_ptr = sph_dir_conf.sintheta.data();
-                float* ct_ptr = sph_dir_conf.costheta.data();
-                float* sp_ptr = sph_dir_conf.sinphi.data();
-                float* cp_ptr = sph_dir_conf.cosphi.data();
+                float* st_ptr = sph_dir_conf.sin_theta.data();
+                float* ct_ptr = sph_dir_conf.cos_theta.data();
+                float* sp_ptr = sph_dir_conf.sin_phi.data();
+                float* cp_ptr = sph_dir_conf.cos_phi.data();
 
                 for (const auto& [p, t] : std::views::zip(phi, theta)) {
 

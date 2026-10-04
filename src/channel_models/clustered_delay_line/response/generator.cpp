@@ -125,7 +125,6 @@ namespace channels::cdl::response {
                 XPR
             );
         }
-
         
         H_static_nlos = nlos::compute_cluster_gain(
             D, 
@@ -156,7 +155,8 @@ namespace channels::cdl::response {
         ) {
             // Compute cluster gain for NLoS component
 
-            const std::size_t nlos_ind_start = pdp_conf.HasLoS ? 1 : 0;
+            const std::size_t los_ind_start = static_cast<std::size_t>(pdp_conf.HasLoS);
+            const std::size_t nlos_ind_start = los_ind_start ? 1 : 0;
             const std::size_t num_all_cluster = pdp_conf.ClusterTypes.size();
             const std::size_t num_nlos_cluster =  num_all_cluster - static_cast<std::size_t>(pdp_conf.HasLoS);
 
@@ -185,6 +185,7 @@ namespace channels::cdl::response {
 
             std::size_t c = 0;
 
+#if 0
             for (const auto& r : RAY_OFFSET_ALPHA) {
 
                 for (const auto& v : pdp_NLoS_cluster) {
@@ -199,12 +200,44 @@ namespace channels::cdl::response {
                     *theta_zod_ptr++ = WRAP_ZENITH_ANGLE(v.zod_deg + C_ZSD*r);
                 }
             }
+#endif
+
+            for (const auto& r : RAY_OFFSET_ALPHA) {
+
+                for (std::size_t n = 0; n < num_nlos_cluster; ++n) {
+                    c++;
+                    // 7.5 Equation 7.5-13 for AoA and AoD
+                    // Also wrap AoA and AoD to [-180, 180]
+                    *phi_aod_ptr++ = WRAP_AZIMUTH_ANGLE_180(pdp_NLoS_cluster[n].aod_deg + C_ASD*r);
+
+                    // AoD -> AoA coupling
+                    const float coupling_idx = coupling[los_ind_start + n + num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER*0] - 1;
+                    const float coupled_aoa = pdp_NLoS_cluster[coupling_idx].aoa_deg;
+                    *phi_aoa_ptr++ = WRAP_AZIMUTH_ANGLE_180( coupled_aoa + C_ASA*r);
+
+                    // 7.5 Equation 7.5-18 for ZoA and ZoD
+                    // AoD -> ZoD coupling
+                    const float coupled_zod = 
+                        pdp_NLoS_cluster[coupling[los_ind_start + n + num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER*ray::AOD_TO_ZOD_COUPLING_PLANE] - 1].zod_deg;
+                    *theta_zod_ptr++ = WRAP_ZENITH_ANGLE(coupled_zod + C_ZSD*r);
+/*
+                    // ZoD -> ZoA coupling then rearrange in AoD order
+                    const std::size_t idx_aod_to_zod = coupling[los_ind_start + r*n*ray::AOD_TO_ZOD_COUPLING_PLANE];
+                    const std::size_t idx_aod_to_zoa = coupling[los_ind_start + idx_aod_to_zod*n*ray::AOD_TO_ZOA_COUPLING_PLANE] - 1;
+                    const float coupled_zoa = pdp_NLoS_cluster[idx_aod_to_zoa].zoa_deg;
+                    *theta_zoa_ptr++ = WRAP_ZENITH_ANGLE(coupled_zoa + C_ZSA*r);
+*/
+
+                    
+                }
+            }
 
             const float lambda_0 = ant_sys_conf.Wavelength();
             const float lambda_0_inv = 1/lambda_0;
 
             // -------------Processing for Tx----------------------------------------------------------------------------------------
-             // angles of departure
+            const antenna::geometry::nlos::SphericalDirections tx_sph_dir_conf = 
+                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoD, theta_ZoD); // angles of departure
             
             // Get Tx antenna/subarray location vector
             const antenna::AntennaArrayConfig& tx_ant_conf = ant_sys_conf.TransmitAntennaArray;
@@ -226,6 +259,8 @@ namespace channels::cdl::response {
             std::vector<std::complex<float>> tx_loc_term(term_size);
 
             for (std::size_t s = 0; s < numTx; ++s) {
+
+
 
             }
 
@@ -371,8 +406,7 @@ namespace channels::cdl::response {
 
             // Get active ray and gain scaling
             // LoS active ray is always 1
-            const float pow_linear = std::powf(10.0f, pdp_LoS_cluster.power_db/10.0f);
-            const float scaling = std::sqrt(pow_linear);
+            const float scaling = std::pow(10.0f, pdp_LoS_cluster.power_db*0.05f); // sqrt(10^pdB/10)
             
             // Calculate the MONSTROUS Equation 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
