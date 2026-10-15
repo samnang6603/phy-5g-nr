@@ -7,7 +7,7 @@
 /***************** Type Definitions *****************/
 namespace channels::cdl::ray {
 
-// Coupling permutation
+// Coupling permutations
 // 1. AoD -> AoA coupling
 // 2: AoD -> ZoA coupling
 // 3. AoD -> ZoD coupling

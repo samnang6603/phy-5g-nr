@@ -81,13 +81,23 @@ namespace channels::cdl::antenna {
         namespace nlos {
 
             struct SphericalDirections {
-                std::vector<float> rhat;
 
-                std::vector<float> sin_theta;
+                std::size_t angle_param_size;
+
+                std::vector<float> rhat;
                 std::vector<float> cos_theta;
-                std::vector<float> sin_phi;
+                std::vector<float> sin_theta;
                 std::vector<float> cos_phi;
+                std::vector<float> sin_phi;
+
+                void resize_theta_phi_vectors() noexcept {
+                    cos_theta.resize(angle_param_size);
+                    sin_theta.resize(angle_param_size);
+                    cos_phi.resize(angle_param_size);
+                    sin_phi.resize(angle_param_size);
+                }
             };
+
         } // namespace nlos
 
     } // namespace geometry
@@ -284,11 +294,10 @@ namespace channels::cdl::antenna {
 
                 SphericalDirections sph_dir_conf;
 
-                sph_dir_conf.rhat.resize(NUM_3D_AXIS*phi.size());
-                sph_dir_conf.sin_theta.resize(phi.size());
-                sph_dir_conf.cos_theta.resize(phi.size());
-                sph_dir_conf.sin_phi.resize(phi.size());
-                sph_dir_conf.cos_phi.resize(phi.size());
+                const std::size_t angle_param_size = phi.size();
+                sph_dir_conf.angle_param_size = angle_param_size;
+                sph_dir_conf.rhat.resize(NUM_3D_AXIS*angle_param_size);
+                sph_dir_conf.resize_theta_phi_vectors();
 
                 float* rhat_ptr = sph_dir_conf.rhat.data();
                 float* st_ptr = sph_dir_conf.sin_theta.data();
@@ -310,19 +319,21 @@ namespace channels::cdl::antenna {
                     *rhat_ptr++ = (*st_ptr)*(*sp_ptr);
                     *rhat_ptr++ = *ct_ptr;
                     
-                    ++st_ptr;
                     ++ct_ptr;
-                    ++sp_ptr;
                     ++st_ptr;
+                    ++cp_ptr;
+                    ++sp_ptr;
                 }
                 return sph_dir_conf;
             }
+            
         } // namespace nlos
     }
 
     namespace field_pattern {
 
         namespace los {
+            
             void compute_field_term(
                 float* field_term,
                 const antenna::AntennaArrayConfig& ant_array_conf,
@@ -340,13 +351,23 @@ namespace channels::cdl::antenna {
         } // namespace los
 
         namespace nlos {
+            
             void compute_field_term(
                 float* field_term,
                 const antenna::AntennaArrayConfig& ant_array_conf,
-                const float theta,
-                const float phi,
+                const geometry::nlos::SphericalDirections sph_dir_conf,
                 const std::size_t ant_idx
             );
+
+            void get_location_term(
+                std::complex<float>* loc_term,
+                const std::vector<float>& rhat,
+                const std::vector<float>& dbar,
+                const std::size_t num_nlos_samples,
+                const float lambda_0_inv,
+                const std::size_t ant_idx
+            );
+            
         }
 
         float get_polarization_angle(

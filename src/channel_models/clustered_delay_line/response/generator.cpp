@@ -171,25 +171,24 @@ namespace channels::cdl::response {
 
             const float* phi_nlos = Phi.data() + nlos_ind_start;
 
-            std::vector<float> phi_AoA(num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER);
+            // Calculate angle parameters
+            std::size_t total_all_cluster_angle_samples = num_all_cluster*NUMBER_OF_RAYS_PER_CLUSTER;
+            std::size_t total_nlos_samples = num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER;
+            std::vector<float> phi_AoA(total_nlos_samples);
             float* phi_aoa_ptr = phi_AoA.data();
 
-            std::vector<float> phi_AoD(num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER);
+            std::vector<float> phi_AoD(total_nlos_samples);
             float* phi_aod_ptr = phi_AoD.data();
             
-            std::vector<float> theta_ZoA(num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER);
+            std::vector<float> theta_ZoA(total_nlos_samples);
             float* theta_zoa_ptr = theta_ZoA.data();
 
-            std::vector<float> theta_ZoD(num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER);
+            std::vector<float> theta_ZoD(total_nlos_samples);
             float* theta_zod_ptr = theta_ZoD.data();
 
-            std::size_t c = 0;
-
-#if 0
             for (const auto& r : RAY_OFFSET_ALPHA) {
 
                 for (const auto& v : pdp_NLoS_cluster) {
-                    c++;
                     // 7.5 Equation 7.5-13 for AoA and AoD
                     // Also wrap AoA and AoD to [-180, 180]
                     *phi_aoa_ptr++ = WRAP_AZIMUTH_ANGLE_180(v.aoa_deg + C_ASA*r);
@@ -200,44 +199,80 @@ namespace channels::cdl::response {
                     *theta_zod_ptr++ = WRAP_ZENITH_ANGLE(v.zod_deg + C_ZSD*r);
                 }
             }
-#endif
 
-            for (const auto& r : RAY_OFFSET_ALPHA) {
+            // Ray coupling angle parameters indices swap
+            // Allocate the angles
+            std::vector<float> phi_AoA_rc(total_nlos_samples);
+            float* phi_aoa_rc_ptr = phi_AoA_rc.data();
+            
+            std::vector<float> theta_ZoA_rc(total_nlos_samples);
+            float* theta_zoa_rc_ptr = theta_ZoA_rc.data();
+
+            std::vector<float> theta_ZoD_rc(total_nlos_samples);
+            float* theta_zod_rc_ptr = theta_ZoD_rc.data();
+
+            std::size_t aod_stride = total_all_cluster_angle_samples*2;
+            std::size_t zod_stride = total_all_cluster_angle_samples;
+
+            std::size_t coupling_idx;
+            for (std::size_t r = 0; r < NUMBER_OF_RAYS_PER_CLUSTER; ++r) {
 
                 for (std::size_t n = 0; n < num_nlos_cluster; ++n) {
-                    c++;
-                    // 7.5 Equation 7.5-13 for AoA and AoD
-                    // Also wrap AoA and AoD to [-180, 180]
-                    *phi_aod_ptr++ = WRAP_AZIMUTH_ANGLE_180(pdp_NLoS_cluster[n].aod_deg + C_ASD*r);
 
+                    // Coupling permutations
+                    // 1. AoD -> AoA coupling
+                    // 2: AoD -> ZoA coupling
+                    // 3. AoD -> ZoD coupling
+                    const std::size_t ind_start = los_ind_start + r + n + num_nlos_cluster*r;
+                    //std::size_t ind_start = n + num_nlos_cluster*r;
+                    
                     // AoD -> AoA coupling
-                    const float coupling_idx = coupling[los_ind_start + n + num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER*0] - 1;
-                    const float coupled_aoa = pdp_NLoS_cluster[coupling_idx].aoa_deg;
-                    *phi_aoa_ptr++ = WRAP_AZIMUTH_ANGLE_180( coupled_aoa + C_ASA*r);
-
+                    coupling_idx = coupling[ind_start];
+                    *phi_aoa_rc_ptr++ = phi_AoA[coupling_idx];
+                    
                     // 7.5 Equation 7.5-18 for ZoA and ZoD
                     // AoD -> ZoD coupling
-                    const float coupled_zod = 
-                        pdp_NLoS_cluster[coupling[los_ind_start + n + num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER*ray::AOD_TO_ZOD_COUPLING_PLANE] - 1].zod_deg;
-                    *theta_zod_ptr++ = WRAP_ZENITH_ANGLE(coupled_zod + C_ZSD*r);
-/*
-                    // ZoD -> ZoA coupling then rearrange in AoD order
-                    const std::size_t idx_aod_to_zod = coupling[los_ind_start + r*n*ray::AOD_TO_ZOD_COUPLING_PLANE];
-                    const std::size_t idx_aod_to_zoa = coupling[los_ind_start + idx_aod_to_zod*n*ray::AOD_TO_ZOA_COUPLING_PLANE] - 1;
-                    const float coupled_zoa = pdp_NLoS_cluster[idx_aod_to_zoa].zoa_deg;
-                    *theta_zoa_ptr++ = WRAP_ZENITH_ANGLE(coupled_zoa + C_ZSA*r);
-*/
+                    coupling_idx = coupling[ind_start + aod_stride];
+                    *theta_zod_rc_ptr++ = theta_ZoD[coupling_idx];
 
-                    
+                    // TODO: to be removed when ZoD -> ZoA coupling + rearrange in AoD order combining done
+                    // ZoD -> ZoA coupling
+                    coupling_idx = coupling[ind_start + zod_stride];
+                    *theta_zoa_rc_ptr++ = theta_ZoA[coupling_idx]; 
+
+                    /* TODO: combine ZoD -> ZoA coupling + rearrange in AoD order
+                    // ZoD -> ZoA coupling, then rearrange in AoD order
+                    const std::size_t zoa_idx = coupling[ind_start + aod_stride];
+
+                    // Convert the intermediate index to the flat coupling array
+                    const std::size_t zoa_coupling_idx = coupling[los_ind_start + zoa_idx + zod_stride];
+
+                    *theta_zoa_rc_ptr++ = theta_ZoA[zoa_coupling_idx]; 
+                    */
                 }
             }
 
+            // TODO: to be removed when ZoD -> ZoA coupling + rearrange in AoD order combining done
+            // Rearrange ZoA in AoD order
+            std::vector<float> theta_ZoA_rc2(total_nlos_samples);
+            theta_zoa_rc_ptr = theta_ZoA_rc2.data();
+            for (std::size_t r = 0; r < NUMBER_OF_RAYS_PER_CLUSTER; ++r) {
+
+                for (std::size_t n = 0; n < num_nlos_cluster; ++n) {
+
+                    const std::size_t ind_start = los_ind_start + r + n + num_nlos_cluster*r;
+                    coupling_idx = coupling[ind_start + aod_stride];
+                    *theta_zoa_rc_ptr++ = theta_ZoA_rc[coupling_idx];
+
+                }
+            } 
+            
             const float lambda_0 = ant_sys_conf.Wavelength();
             const float lambda_0_inv = 1/lambda_0;
 
             // -------------Processing for Tx----------------------------------------------------------------------------------------
             const antenna::geometry::nlos::SphericalDirections tx_sph_dir_conf = 
-                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoD, theta_ZoD); // angles of departure
+                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoD, theta_ZoD_rc); // angles of departure
             
             // Get Tx antenna/subarray location vector
             const antenna::AntennaArrayConfig& tx_ant_conf = ant_sys_conf.TransmitAntennaArray;
@@ -254,15 +289,80 @@ namespace channels::cdl::response {
 
             // Allocation for Tx field term and location term
             const std::size_t numTx = ant_sys_conf.NumInputSignals;
-            const std::size_t term_size = numTx*num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER;
-            std::vector<float> tx_field_term(term_size*NUM_FIELD_SPHERICAL_ANGLES);
-            std::vector<std::complex<float>> tx_loc_term(term_size);
+            const std::size_t tx_term_size = numTx*num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER;
+            std::vector<float> tx_field_term(tx_term_size*NUM_FIELD_SPHERICAL_ANGLES);
+            std::vector<std::complex<float>> tx_loc_term(tx_term_size);
 
             for (std::size_t s = 0; s < numTx; ++s) {
 
+                float* field_term = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
 
+                antenna::field_pattern::nlos::compute_field_term(
+                    field_term,
+                    tx_ant_conf,
+                    tx_sph_dir_conf,
+                    s
+                ); 
 
+                std::complex<float>* loc_term = tx_loc_term.data() + s*total_nlos_samples;
+
+                antenna::field_pattern::nlos::get_location_term(
+                    loc_term,
+                    tx_sph_dir_conf.rhat,
+                    tx_dbar,
+                    total_nlos_samples,
+                    lambda_0_inv,
+                    s
+                );
             }
+            //------------End Processing for Tx----------------------------------------------------------------------------------------
+
+            //--------------Processing for Rx------------------------------------------------------------------------------------------
+            const antenna::geometry::nlos::SphericalDirections rx_sph_dir_conf = 
+                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoA, theta_ZoA_rc2); // angles of arrival
+            
+            // Get Rx antenna/subarray location vector
+            const antenna::AntennaArrayConfig& rx_ant_conf = ant_sys_conf.ReceiveAntennaArray;
+            const std::vector<float>& rx_radiator_pos = rx_ant_conf.FieldPattern.ElementPositions;
+            const antenna::geometry::PositionConfig& rx_pos_conf = rx_ant_conf.Position;
+
+            // Calculate the location vector dbar of Rx
+            std::vector<float> rx_dbar(rx_radiator_pos.size());
+            for (std::size_t i = 0; i < rx_radiator_pos.size(); i += 3) { // +3 stride over pos(x,y,z)
+                rx_dbar[i] = rx_radiator_pos[i]*lambda_0 + rx_pos_conf.x;
+                rx_dbar[i + 1] = rx_radiator_pos[i + 1]*lambda_0 + rx_pos_conf.y;
+                rx_dbar[i + 2] = rx_radiator_pos[i + 2]*lambda_0 + rx_pos_conf.z;
+            }
+
+            // Allocation for Tx field term and location term
+            const std::size_t numRx = ant_sys_conf.NumInputSignals;
+            const std::size_t rx_term_size = numRx*num_nlos_cluster*NUMBER_OF_RAYS_PER_CLUSTER;
+            std::vector<float> rx_field_term(rx_term_size*NUM_FIELD_SPHERICAL_ANGLES);
+            std::vector<std::complex<float>> rx_loc_term(rx_term_size);
+
+            for (std::size_t u = 0; u < numRx; ++u) {
+
+                float* field_term = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
+
+                antenna::field_pattern::nlos::compute_field_term(
+                    field_term,
+                    rx_ant_conf,
+                    rx_sph_dir_conf,
+                    u
+                ); 
+
+                std::complex<float>* loc_term = rx_loc_term.data() + u*total_nlos_samples;
+
+                antenna::field_pattern::nlos::get_location_term(
+                    loc_term,
+                    rx_sph_dir_conf.rhat,
+                    rx_dbar,
+                    total_nlos_samples,
+                    lambda_0_inv,
+                    u
+                );
+            }
+            //------------End Processing for Rx----------------------------------------------------------------------------------------
 
 
 

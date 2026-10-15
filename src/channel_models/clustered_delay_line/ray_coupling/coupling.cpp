@@ -73,13 +73,13 @@ namespace channels::cdl::ray {
           coupling.data()
         );
 
-        const std::size_t AoD2ZoD_start_idx = (COUPLING_PERMUTATIONS - 1)*L*M;
-        const std::size_t AoD2ZoA_start_idx = L*M;
+        const std::size_t aod2zod_start_idx = (COUPLING_PERMUTATIONS - 1)*L*M;
+        const std::size_t aod2zoa_start_idx = L*M;
 
         // Copy AoD -> ZoD
-        std::copy(indices.data() + AoD2ZoD_start_idx,
+        std::copy(indices.data() + aod2zod_start_idx,
           indices.data() + COUPLING_PERMUTATIONS*L*M,
-          coupling.data() + AoD2ZoD_start_idx
+          coupling.data() + aod2zod_start_idx
         );
 
         std::vector<std::size_t> cluster_sorted_indices(M);
@@ -88,7 +88,7 @@ namespace channels::cdl::ray {
         
             std::iota(cluster_sorted_indices.begin(), cluster_sorted_indices.end(), 0);
 
-            const auto* zod = indices.data() + AoD2ZoD_start_idx + l;
+            const auto* zod = indices.data() + aod2zod_start_idx + l;
 
             // sort the AoD->ZoD in ascending order and get only the index
             std::sort(cluster_sorted_indices.begin(), cluster_sorted_indices.end(),
@@ -97,10 +97,10 @@ namespace channels::cdl::ray {
             });
 
             // map the sorted index to rearrange AoD->ZoA according to AoD->ZoD
-            auto* dst = coupling.data() + AoD2ZoA_start_idx + l;
-            auto* zoa = indices.data() + AoD2ZoA_start_idx + l;
+            auto* dst = coupling.data() + aod2zoa_start_idx + l;
+            auto* zoa = indices.data() + aod2zoa_start_idx + l;
             for (std::size_t m = 0; m < M; ++m) {
-                //coupling[AoD2ZoA_start_idx + l + L*m] = indices[AoD2ZoA_start_idx + l + L*cluster_sorted_indices[m]];
+                //coupling[aod2zoa_start_idx + l + L*m] = indices[aod2zoa_start_idx + l + L*cluster_sorted_indices[m]];
                 *dst = *(zoa + L*cluster_sorted_indices[m]);
                 dst += L;
             }
@@ -147,7 +147,7 @@ namespace channels::cdl::ray {
                 for (std::size_t a = 0; a < COUPLING_PERMUTATIONS; ++a) {
                     const std::size_t this_idx = l + L*m + L*NUMBER_OF_RAYS_PER_CLUSTER*a;
                     auto& v = coupling[this_idx];
-                    v = v*stride + l;
+                    v = v*stride + l - 1;
                 }
             }
         }
