@@ -153,8 +153,8 @@ namespace channels::cdl::antenna {
     };
 
     struct AntennaSystemConfig {
-        std::size_t NumInputSignals;
-        std::size_t NumOutputSignals;
+        std::uint16_t NumInputSignals;
+        std::uint16_t NumOutputSignals;
         AntennaArrayConfig TransmitAntennaArray;
         AntennaArrayConfig ReceiveAntennaArray;
         float CarrierFrequency = 4E+9f;

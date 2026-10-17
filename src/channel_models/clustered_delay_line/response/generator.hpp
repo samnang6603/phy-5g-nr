@@ -4,6 +4,7 @@
 #include "../antenna_array/antenna.hpp"
 #include "../cluster_profiles/profile.hpp"
 #include "../../channel_models_common.hpp"
+#include "../mobility/mobility.hpp"
 
 // Ray offset in 7.5 Table 7.5-3
 constexpr std::array<float, NUM_RAYS_PER_CLUSTER> RAY_OFFSET_ALPHA = {
@@ -46,7 +47,9 @@ namespace channels::cdl::response {
         TimeVaryingPathGainConfig& tv_gain_conf,
         const StaticPathGainConfig& los_gain_conf,
         const StaticPathGainConfig& nlos_gain_conf,
-        const antenna::AntennaArrayConfig& ant_sys_conf
+        const ChannelControlConfig& channel_ctrl_conf,
+        const antenna::AntennaSystemConfig& ant_sys_conf,
+        const mobility::MobilityConfig& mobility_conf
     );
 
     //void generate_ofdm_response();

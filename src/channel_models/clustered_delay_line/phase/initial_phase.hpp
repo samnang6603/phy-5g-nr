@@ -9,7 +9,7 @@ namespace channels::cdl::phase {
     std::vector<float> generateInitialPhase(
         pdp::DelayProfileConfig& pdp_conf,
         RandomStreamConfig& rstream_conf,
-        const ChannelControlConfig& control_conf,
+        const ChannelControlConfig& channel_ctrl_conf,
         const antenna::AntennaSystemConfig& ant_array_conf
     );
 

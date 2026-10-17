@@ -18,7 +18,7 @@ namespace channels::cdl::phase {
     std::vector<float> generateInitialPhase(
         pdp::DelayProfileConfig& pdp_conf,
         RandomStreamConfig& randstream_conf,
-        const ChannelControlConfig& control_conf,
+        const ChannelControlConfig& channel_ctrl_conf,
         const antenna::AntennaSystemConfig& ant_sys_conf
     ) {
         // Generates initial channel phase
@@ -31,7 +31,7 @@ namespace channels::cdl::phase {
 
         auto& randomStream = randstream_conf.Stream;
 
-        bool isRandomInitPhase = control_conf.InitialPhase == "Random";
+        bool isRandomInitPhase = channel_ctrl_conf.InitialPhase == "Random";
 
         if (isRandomInitPhase) {
             for (auto& v : Phi) {

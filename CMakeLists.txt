@@ -94,6 +94,8 @@ add_executable(${PROJECT_NAME}
     src/channel_models/clustered_delay_line/ray_coupling/coupling.cpp
     src/channel_models/clustered_delay_line/mobility/mobility.cpp
     src/channel_models/clustered_delay_line/response/generator.cpp
+    src/channel_models/clustered_delay_line/response/static_path_gain.cpp
+    src/channel_models/clustered_delay_line/response/time_varying_path_gain.cpp
     src/utils/utils.cpp
     main_driver.cpp
 )

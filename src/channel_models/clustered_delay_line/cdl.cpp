@@ -43,6 +43,8 @@ namespace channels::cdl {
         ChannelControlConfig& ChannelControl = config_.ChannelControl;
         RandomStreamConfig& RandomStream = config_.RandomStream;
         mobility::MobilityConfig& Mobility = config_.Mobility;
+        response::StaticPathGainConfig& LoSStaticPathGain = config_.LoSStaticPathGain;
+        response::StaticPathGainConfig& NLoSStaticPathGain = config_.NLoSStaticPathGain;
 
         // Step 1: configure antenna structure
         antenna::geometry::initialize(AntennaSystem);
@@ -76,8 +78,6 @@ namespace channels::cdl {
         );
 
         // Step 7: generate static CDL channel
-        response::StaticPathGainConfig LoSStaticPathGain;
-        response::StaticPathGainConfig NLoSStaticPathGain;
         response::generate_static_path_gains(
             LoSStaticPathGain,
             NLoSStaticPathGain,

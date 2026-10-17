@@ -4,6 +4,7 @@
 #include "cluster_profiles/profile.hpp"
 #include "antenna_array/antenna.hpp"
 #include "mobility/mobility.hpp"
+#include "response/generator.hpp"
 #include "../channel_models_common.hpp"
 
 namespace channels::cdl {
@@ -17,6 +18,8 @@ namespace channels::cdl {
             antenna::AntennaSystemConfig AntennaSystem;
             RandomStreamConfig RandomStream;
             ChannelControlConfig ChannelControl;
+            response::StaticPathGainConfig LoSStaticPathGain;
+            response::StaticPathGainConfig NLoSStaticPathGain;
         };
 
         nrCDLChannel();

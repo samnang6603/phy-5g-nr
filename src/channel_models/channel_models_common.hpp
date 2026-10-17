@@ -32,6 +32,7 @@ namespace channels {
     struct ChannelControlConfig {
         float SampleRate = 30720000.0f;
         float InitialTime = 0.0f;
+        float CurrentTime = InitialTime;
         float SampleDensity = 64.0f;
 
         bool NormalizeChannelOutput = true;
