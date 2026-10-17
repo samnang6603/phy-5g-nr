@@ -65,7 +65,7 @@ namespace channels::cdl::antenna::geometry {
         std::size_t num_elem_per_panel = static_cast<std::size_t>(s.M)*s.N;
         std::size_t num_elem = num_elem_per_panel*s.P*s.Mg*s.Ng;
 
-        std::vector<float> pos(s.num_antenna_ports()*NUM_3D_AXIS,0.0f);
+        std::vector<float> pos(s.sum_antenna_ports()*NUM_3D_AXIS,0.0f);
 
         // The pos array is arranged in this way:
         // [ [x0, y0, z0, x1, y1, z1, ..., xM, yM, zM],
@@ -80,17 +80,21 @@ namespace channels::cdl::antenna::geometry {
 
         std::size_t spc_idx = 0;
         std::size_t pos_idx = 0;
+        std::vector<float> tmp;
+        float* tmp_ptr;
+
         for (std::size_t i = 0; i < size.size() - 1; ++i) {
 
             const auto& v = size[i];
 
             float accum_tmp = spacing[spc_idx++];
-            std::vector<float> tmp;
-            tmp.push_back(accum_tmp);
+            tmp.resize(size[i]);
+            tmp_ptr = tmp.data();
+            *tmp_ptr++ = accum_tmp;
 
             for (std::size_t b = 0; b < v - 1; ++b) {
                 accum_tmp += accum_tmp;
-                tmp.push_back(accum_tmp);
+                *tmp_ptr++ = accum_tmp;
             }
 
             float mean_tmp = utils::float_arithmetic::calculateMeans(tmp);

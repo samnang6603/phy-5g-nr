@@ -40,6 +40,10 @@ namespace channels::cdl::antenna {
                 return num_antennas()*P;
             }
 
+            std::size_t sum_antenna_ports() const noexcept {
+                return static_cast<std::size_t>(M) + N + Mg + Ng + P;
+            }
+
             std::size_t num_spatial_values() const noexcept {
                 return NUM_3D_AXIS*num_antenna_ports();
             }

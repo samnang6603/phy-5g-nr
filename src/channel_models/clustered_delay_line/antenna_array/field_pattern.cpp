@@ -484,7 +484,7 @@ namespace channels::cdl::antenna::field_pattern {
             const float sumv = TWO_PI*(v1 + v2 + v3)*lambda_0_inv;
             const std::complex<float> c(std::cos(sumv), std::sin(sumv));
 
-            std::fill(loc_term, loc_term + NUMBER_OF_RAYS_PER_CLUSTER, c);
+            std::fill(loc_term, loc_term + NUM_RAYS_PER_CLUSTER, c);
         }
     } // namespace los
 

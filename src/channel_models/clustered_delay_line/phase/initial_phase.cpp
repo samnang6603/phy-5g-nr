@@ -27,14 +27,14 @@ namespace channels::cdl::phase {
         // (theta-theta,theta-phi,phi-theta,phi-phi), theta: zenith, phi: azimuth
         // See TR 38.901 section 7.5 for more details
         std::size_t cluster_len = pdp_conf.Table.size();
-        std::vector<float> phi(cluster_len*NUMBER_OF_RAYS_PER_CLUSTER*NUM_ANGLE_POLARIZATION_COMBO);
+        std::vector<float> Phi(cluster_len*NUM_RAYS_PER_CLUSTER*NUM_ANGLE_POLARIZATION_COMBO);
 
         auto& randomStream = randstream_conf.Stream;
 
         bool isRandomInitPhase = control_conf.InitialPhase == "Random";
 
         if (isRandomInitPhase) {
-            for (auto& v : phi) {
+            for (auto& v : Phi) {
                 v = static_cast<float>(randomStream.rand())*TWO_PI - M_PI;
             }
         } else {
@@ -53,11 +53,11 @@ namespace channels::cdl::phase {
             );
 
             // Update LoS component
-            phi[0] = -TWO_PI*d_3D/lambda_0;
+            Phi[0] = -TWO_PI*d_3D/lambda_0;
 
         }
 
-        return phi;
+        return Phi;
     }
 
     static float calculate_d3D(

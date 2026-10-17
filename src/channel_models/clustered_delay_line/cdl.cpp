@@ -55,7 +55,7 @@ namespace channels::cdl {
         // buildClusters(); 
 
         // Step 4: generate initial phases
-        std::vector<float> phi = phase::generateInitialPhase(
+        std::vector<float> Phi = phase::generateInitialPhase(
             DelayProfile,
             RandomStream,
             ChannelControl,
@@ -76,9 +76,19 @@ namespace channels::cdl {
         );
 
         // Step 7: generate static CDL channel
-        std::vector<float> H_static = response::generate_static_path_gains(
-            DelayProfile, AntennaSystem, ray_coupling, phi);
+        response::StaticPathGainConfig LoSStaticPathGain;
+        response::StaticPathGainConfig NLoSStaticPathGain;
+        response::generate_static_path_gains(
+            LoSStaticPathGain,
+            NLoSStaticPathGain,
+            ChannelControl,
+            DelayProfile, 
+            AntennaSystem, 
+            ray_coupling, 
+            Phi
+        );
 
+        std::cout << "Jobs done!" << std::endl;
         // Step 8: generate initial time-varying CDL channel
 
     }

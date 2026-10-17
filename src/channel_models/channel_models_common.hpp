@@ -5,7 +5,8 @@
 #include <string>
 #include "matlab_mt19937.hpp"
 
-constexpr std::uint8_t NUMBER_OF_RAYS_PER_CLUSTER = 20;
+constexpr std::uint8_t NUM_RAYS_PER_CLUSTER = 20;
+constexpr float INV_SQRT_NUM_RAYS_PER_CLUSTER = 0.223606797749979f;
 constexpr float SPEED_OF_LIGHT = 299792458.0f;
 
 namespace channels {

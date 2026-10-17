@@ -27,7 +27,7 @@ namespace channels::cdl::ray {
         // Calculate ray coupling according to TR 38.901 section 7.5 step 8
 
         std::vector<PropagationCondition>& cluster_types = pdp_conf.ClusterTypes;
-        const std::uint8_t M = NUMBER_OF_RAYS_PER_CLUSTER;
+        const std::uint8_t M = NUM_RAYS_PER_CLUSTER;
         const std::uint8_t L = cluster_types.size();
 
         // First L*M plane is AoD -> AoA coupling
@@ -143,9 +143,9 @@ namespace channels::cdl::ray {
         const std::size_t stride = hasLoS ? L - 1 : L;
         const std::size_t start = static_cast<std::size_t>(hasLoS);
         for (std::size_t l = start; l < L; ++l) {
-            for (std::size_t m = 0; m < NUMBER_OF_RAYS_PER_CLUSTER; ++m) {
+            for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
                 for (std::size_t a = 0; a < COUPLING_PERMUTATIONS; ++a) {
-                    const std::size_t this_idx = l + L*m + L*NUMBER_OF_RAYS_PER_CLUSTER*a;
+                    const std::size_t this_idx = l + L*m + L*NUM_RAYS_PER_CLUSTER*a;
                     auto& v = coupling[this_idx];
                     v = v*stride + l - 1;
                 }

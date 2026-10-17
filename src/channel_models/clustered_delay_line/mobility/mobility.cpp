@@ -28,7 +28,7 @@ namespace channels::cdl::mobility {
             v_scatt = 0;
         }
 
-        uint8_t M = NUMBER_OF_RAYS_PER_CLUSTER;
+        uint8_t M = NUM_RAYS_PER_CLUSTER;
         uint8_t L = pdp_conf.ClusterTypes.size();
         std::size_t size = static_cast<std::size_t>(M)*L;
 
