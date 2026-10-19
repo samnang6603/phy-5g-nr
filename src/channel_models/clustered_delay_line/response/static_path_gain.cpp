@@ -405,6 +405,8 @@ namespace channels::cdl::response {
                 norm_path_gain = 1.0f/std::sqrt(avg_path_gains);
             }
 
+            const float norm_path_and_output = norm_path_gain*norm_output;
+
             // Calculate the MONSTROUS Equation 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
             nlos_gain_conf.Response.resize(total_nlos_samples*numRx*numTx);
@@ -465,10 +467,10 @@ namespace channels::cdl::response {
                     
                         */
                         const std::complex<float> loc_terms = (*rxloc++)*(*txloc++);
-                        *h++ = loc_terms*sum_field_terms*ksqrtinv[i]*norm_path_gain*norm_output; // repeating ksqrtinv is beneficial here
+                        *h++ = loc_terms*sum_field_terms*ksqrtinv[i]*norm_path_and_output; // repeating ksqrtinv is beneficial here
 
                         rxft += NUM_FIELD_SPHERICAL_ANGLES; // ptr will go out of bound by exactly 1 element, which is fine
-                        txft += NUM_FIELD_SPHERICAL_ANGLES;
+                        txft += NUM_FIELD_SPHERICAL_ANGLES; // ptr will go out of bound by exactly 1 element, which is fine
                     }
                 }
             }

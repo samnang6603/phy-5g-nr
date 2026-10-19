@@ -24,8 +24,7 @@ namespace channels::cdl::response {
 
     struct TimeVaryingPathGainConfig {
         std::vector<std::complex<float>> Response;
-        float SampleDensity;
-        float Spectrum;
+        std::vector<float> TimeVector;
     };
 
     struct PathGainConfig {
@@ -47,6 +46,7 @@ namespace channels::cdl::response {
         TimeVaryingPathGainConfig& tv_gain_conf,
         const StaticPathGainConfig& los_gain_conf,
         const StaticPathGainConfig& nlos_gain_conf,
+        const pdp::DelayProfileConfig& pdp_conf,
         const ChannelControlConfig& channel_ctrl_conf,
         const antenna::AntennaSystemConfig& ant_sys_conf,
         const mobility::MobilityConfig& mobility_conf

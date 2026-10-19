@@ -1,5 +1,5 @@
 #pragma once
-
+#include <array>
 #include <variant>
 #include <vector>
 #include "../cluster_profiles/profile.hpp"
@@ -15,8 +15,15 @@ namespace channels::cdl::mobility {
     };
 
     struct MobilityConfig {
-        std::variant<float, std::vector<float>> MaximumDopplerShift{5.0f};
+        // Max doppler array can be 2 elem due to doppler from both rx and tx
+        std::variant<float, std::array<float, 2>> MaximumDopplerShift{5.0f}; 
         ScattererConfig Scatterer;
+
+        // User-Terminal direction of travel can be a 2 or 4-elements
+        // if 2, then the values map to [Rx_azimuth, Rx_zenith]
+        // if 4, then the values map to [Rx_azmith, Tx_azimuth, Rx_zenith, Tx_zenith]
+        // azimuth is theta, zenith is phi
+        std::vector<float> UTDirectionOfTravel = {0.0f, 90.0f};
     };
 
     void compute_scatterer_variables(

@@ -160,7 +160,7 @@ namespace channels::cdl::antenna {
         float CarrierFrequency = 4E+9f;
         
         float Wavelength() const noexcept {
-            return SPEED_OF_LIGHT / CarrierFrequency;
+            return SPEED_OF_LIGHT/CarrierFrequency;
         }
     };
         
