@@ -20,6 +20,7 @@ namespace channels::cdl {
             ChannelControlConfig ChannelControl;
             response::StaticPathGainConfig LoSStaticPathGain;
             response::StaticPathGainConfig NLoSStaticPathGain;
+            response::TimeVaryingPathGainConfig TimeVaryingPathGain;
         };
 
         nrCDLChannel();

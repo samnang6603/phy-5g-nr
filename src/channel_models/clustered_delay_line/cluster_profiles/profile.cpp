@@ -171,7 +171,7 @@ namespace channels::cdl::pdp {
     ) {
         // Scales KFactor
         // calculates K-Factor from pdp, lookup power index
-        // see Equation 7.7.6-2
+        // see Eq. 7.7.6-2
 
         float total_power_lin = 0.0f;
 
@@ -185,7 +185,7 @@ namespace channels::cdl::pdp {
         // scale the power of all taps excluding the 1st tap (0-delay
         // component) by subtract the difference of target K-Factor and the
         // calculated K-Factor
-        // See Equation 7.7.6-1
+        // See Eq. 7.7.6-1
         for (std::size_t i = 1; i < pdp_table.size(); ++i) {
             auto& power = pdp_table[i].power_db;
             power += K_model - desired_KFactor;  

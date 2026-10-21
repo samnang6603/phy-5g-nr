@@ -42,7 +42,7 @@ namespace channels::cdl::phase {
         }
 
         if (pdp_conf.HasLoS) {
-            // See TR 38.901 Equation 7.5-29
+            // See TR 38.901 Eq. 7.5-29
             // Phase of exponential term with d_3D
             const float lambda_0 = ant_sys_conf.Wavelength();
 

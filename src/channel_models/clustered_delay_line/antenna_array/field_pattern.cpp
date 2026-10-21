@@ -107,7 +107,7 @@ namespace channels::cdl::antenna::field_pattern {
             const std::size_t ant_idx
         ) {
             // Compute field term of NLoS clusters in GCS
-            // Using Equation 7.1-11. The process of this function involves finding psi
+            // Using Eq. 7.1-11. The process of this function involves finding psi
             // and F_prime from polarization and field pattern
 
             /*
@@ -156,7 +156,7 @@ namespace channels::cdl::antenna::field_pattern {
                 geometry::multiply_3x3_matrices_BtAB(A, B);
 
             // sph_unit: [rho, theta, phi] <=> [radius, azimuth, zenith]
-            // Compute theta_prime and phi_prime according to TR 38.901 Equation 7.1-7
+            // Compute theta_prime and phi_prime according to TR 38.901 Eq. 7.1-7
             // and 7.1-8
             const std::vector<float>& rhat = sph_dir_conf.rhat;
             const std::size_t angle_sample_size = sph_dir_conf.cos_theta.size();
@@ -199,7 +199,7 @@ namespace channels::cdl::antenna::field_pattern {
             }
 
             // Compute psi, the angular displacement between two pairs of
-            // unit vectors, according to Equation 7.1-12
+            // unit vectors, according to Eq. 7.1-12
             const float* ct_ptr = sph_dir_conf.cos_theta.data();
             const float* cp_ptr = sph_dir_conf.cos_phi.data();
             const float* st_ptr = sph_dir_conf.sin_theta.data();
@@ -315,7 +315,7 @@ namespace channels::cdl::antenna::field_pattern {
         ) {
 
             // Compute field term of LoS clusters in GCS
-            // Using Equation 7.1-11. The process of this function involves finding psi
+            // Using Eq. 7.1-11. The process of this function involves finding psi
             // and F_prime from polarization and field pattern
 
             /*
@@ -364,7 +364,7 @@ namespace channels::cdl::antenna::field_pattern {
                 geometry::multiply_3x3_matrices_BtAB(A, B);
 
             // sph_unit: [rho, theta, phi] <=> [radius, azimuth, zenith]
-            // Compute theta_prime and phi_prime according to TR 38.901 Eqn 7.1-7 and 7.1-8
+            // Compute theta_prime and phi_prime according to TR 38.901 Eq. 7.1-7 and 7.1-8
             const std::array<float, geometry::NUM_3D_AXIS>& rhat = sph_dir_conf.rhat;
             float theta_prime = std::acos(rhat[2]);
             float phi_prime   = std::atan2(rhat[1], rhat[0]);
@@ -380,7 +380,7 @@ namespace channels::cdl::antenna::field_pattern {
             prime_dat.phi_prime_deg = {phi_prime_deg};
 
             // Compute psi, the angular displacement between two pairs of
-            // unit vectors, according to Equation 7.1-12
+            // unit vectors, according to Eq. 7.1-12
             // First, we need to find the unit vector of theta, phi, and theta_prime
             // These are the Cartesian representation of the spherical unit vectors
             const float cos_theta = sph_dir_conf.cos_theta;
@@ -414,7 +414,7 @@ namespace channels::cdl::antenna::field_pattern {
                 -sin_theta_prime
             };
 
-            // Using Equation 7.1-12, simplified by hand to get the least computational
+            // Using Eq. 7.1-12, simplified by hand to get the least computational
             // expression
             const float tmp0 = R[0]*theta_prime_hat[0] + R[3]*theta_prime_hat[1] + R[6]*theta_prime_hat[2];
             const float tmp1 = R[1]*theta_prime_hat[0] + R[4]*theta_prime_hat[1] + R[7]*theta_prime_hat[2];
@@ -456,7 +456,7 @@ namespace channels::cdl::antenna::field_pattern {
 #endif
 
             // Finally, we have everything we need to compute fieldTerm in GCS,
-            // using equation 7.1-11
+            // using Eq. 7.1-11
             const float cospsi = std::cos(psi);
             const float sinpsi = std::sin(psi);
 
@@ -766,7 +766,7 @@ namespace channels::cdl::antenna::field_pattern {
 
                 // Rotation matrix elements cos(Psi) and sin(Psi) for an angular
                 // displacement of Psi due to the orientation of the LCS w.r.t. the GCS
-                // See Equation 7.3-3 cos(phi) and sin(phi)
+                // See Eq. 7.3-3 cos(phi) and sin(phi)
                 const float theta_p_r = DEG2RAD(theta_prime[i]);
                 const float sin_theta = std::sin(theta_p_r);
                 const float cos_theta = std::cos(theta_p_r);
@@ -805,7 +805,7 @@ namespace channels::cdl::antenna::field_pattern {
                     sin_psi = 0.0f;
                 }
 
-                // Equation 7.3-3 evaluated assuming F_phi_pp = 0
+                // Eq. 7.3-3 evaluated assuming F_phi_pp = 0
                 /*
                     [F_theta_p]     [cos(phi) -sin(phi)]   [F_theta_pp]
                     |         |  =  |                  | * |          |
@@ -817,10 +817,10 @@ namespace channels::cdl::antenna::field_pattern {
 
             if constexpr (PolMode == PolarizationModelOption::MODEL2) {
 
-                // TR 38.901 Equation 7.3-4
+                // TR 38.901 Eq. 7.3-4
                 F[i] = sqrt_A_prime*cos_zeta;
 
-                // TR 38.901 Equation 7.3-5
+                // TR 38.901 Eq. 7.3-5
                 F[i + theta_len] = sqrt_A_prime*sin_zeta;
             }
         }
@@ -868,7 +868,7 @@ namespace channels::cdl::antenna::field_pattern {
 
                 // Rotation matrix elements cos(Psi) and sin(Psi) for an angular
                 // displacement of Psi due to the orientation of the LCS w.r.t. the GCS
-                // See Equation 7.3-3 cos(phi) and sin(phi)
+                // See Eq. 7.3-3 cos(phi) and sin(phi)
                 const float sin_theta_prime = prime_dat.sin_theta_prime[i];
                 const float cos_theta_prime = prime_dat.cos_theta_prime[i];
 
@@ -904,7 +904,7 @@ namespace channels::cdl::antenna::field_pattern {
                     sin_psi = 0.0f;
                 }
 
-                // Equation 7.3-3 evaluated assuming F_phi_pp = 0
+                // Eq. 7.3-3 evaluated assuming F_phi_pp = 0
                 /*
                     [F_theta_p]     [cos(phi) -sin(phi)]   [F_theta_pp]
                     |         |  =  |                  | * |          |
@@ -918,11 +918,11 @@ namespace channels::cdl::antenna::field_pattern {
 
             if constexpr (PolMode == PolarizationModelOption::MODEL2) {
 
-                // TR 38.901 Equation 7.3-4
+                // TR 38.901 Eq. 7.3-4
                 //F[i] = sqrt_A_prime*cos_zeta;
                 F[j] = sqrt_A_prime*cos_zeta;
 
-                // TR 38.901 Equation 7.3-5
+                // TR 38.901 Eq. 7.3-5
                 //F[i + theta_len] = sqrt_A_prime*sin_zeta;
                 F[j + 1] = sqrt_A_prime*sin_zeta;
             }

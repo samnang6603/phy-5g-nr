@@ -130,7 +130,7 @@ namespace channels::cdl::response {
             const std::vector<float>& Phi,
             const std::vector<std::size_t>& coupling
         ) {
-            // Compute cluster gain for NLoS component
+            // Compute cluster gain for NLoS components.
 
             const std::size_t los_ind_start = static_cast<std::size_t>(pdp_conf.HasLoS);
             const std::size_t nlos_ind_start = los_ind_start ? 1 : 0;
@@ -164,12 +164,12 @@ namespace channels::cdl::response {
             for (const auto& r : RAY_OFFSET_ALPHA) {
 
                 for (const auto& v : pdp_NLoS_cluster) {
-                    // 7.5 Equation 7.5-13 for AoA and AoD
+                    // 7.5 Eq. 7.5-13 for AoA and AoD
                     // Also wrap AoA and AoD to [-180, 180]
                     *phi_aoa_ptr++ = WRAP_AZIMUTH_ANGLE_180(v.aoa_deg + C_ASA*r);
                     *phi_aod_ptr++ = WRAP_AZIMUTH_ANGLE_180(v.aod_deg + C_ASD*r);
 
-                    // 7.5 Equation 7.5-18 for ZoA and ZoD
+                    // 7.5 Eq. 7.5-18 for ZoA and ZoD
                     *theta_zoa_ptr++ = WRAP_ZENITH_ANGLE(v.zoa_deg + C_ZSA*r);
                     *theta_zod_ptr++ = WRAP_ZENITH_ANGLE(v.zod_deg + C_ZSD*r);
                 }
@@ -205,7 +205,7 @@ namespace channels::cdl::response {
                     coupling_idx = coupling[ind_start];
                     *phi_aoa_rc_ptr++ = phi_AoA[coupling_idx];
                     
-                    // 7.5 Equation 7.5-18 for ZoA and ZoD
+                    // 7.5 Eq. 7.5-18 for ZoA and ZoD
                     // AoD -> ZoD coupling
                     coupling_idx = coupling[ind_start + aod_stride];
                     *theta_zod_rc_ptr++ = theta_ZoD[coupling_idx];
@@ -302,7 +302,7 @@ namespace channels::cdl::response {
 
             //--------------Processing for Rx------------------------------------------------------------------------------------------
             const antenna::geometry::nlos::SphericalDirections rx_sph_dir_conf = 
-                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoA, theta_ZoA_rc2); // angles of arrival
+                antenna::geometry::nlos::get_spherical_unit_vectors(phi_AoA_rc, theta_ZoA_rc2); // angles of arrival
             
             nlos_gain_conf.RxSphericalUnitVector.assign(
                 rx_sph_dir_conf.rhat.begin(),
@@ -407,7 +407,7 @@ namespace channels::cdl::response {
 
             const float norm_path_and_output = norm_path_gain*norm_output;
 
-            // Calculate the MONSTROUS Equation 7.5-28 excluding Doppler (the
+            // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
             nlos_gain_conf.Response.resize(total_nlos_samples*numRx*numTx);
             std::complex<float>* h = nlos_gain_conf.Response.data();
@@ -437,13 +437,13 @@ namespace channels::cdl::response {
                             (thth): theta-theta, (thph): theta-phi
                             ksqrtinv: 1/sqrt(kappa)
 
-                        fieldTerms =
+                         fieldTerms =
 
-                                 T
-                        [F_rx_th]   [exp(jPhi_thth)          ksqrinv*exp(jPhi_thph]   [F_tx_th]
-                        |       | * |                                             | * |       |
-                        [F_rx_ph]   [ksqrinv*exp(jPhi_phth)         exp(jPhi_phph)]   [F_rx_ph]
-                            
+                                  T
+                         [F_rx_th]   [exp(jPhi_thth)          ksqrinv*exp(jPhi_thph]   [F_tx_th]
+                         |       | * |                                             | * |       |
+                         [F_rx_ph]   [ksqrinv*exp(jPhi_phth)         exp(jPhi_phph)]   [F_rx_ph]
+                       
                         */
 
                         // This implmentation doesn't include matrix multiplication as in 7.5-28 
@@ -457,12 +457,12 @@ namespace channels::cdl::response {
                         const std::complex<float> tmp23 = tmp2 + tmp3;
                         const std::complex<float> sum_field_terms = (tmp01)*(txft[0]) + (tmp23)*(txft[1]);
                         /*
-                        Then, compute all the location terms combined. In 7.5-28, all the 
-                        location terms are combined as below (excluding Doppler term):
+                         Then, compute all the location terms combined. In 7.5-28, all the 
+                         location terms are combined as below (excluding Doppler term):
                         
-                                           T                            T
-                                    /     r_rx*rx_dbar  \        /     r_tx*tx_dbar  \    
-                                exp| j2pi--------------- | * exp| j2pi--------------- |
+                                            T                            T
+                                     /     r_rx*rx_dbar  \        /     r_tx*tx_dbar  \    
+                                 exp| j2pi--------------- | * exp| j2pi--------------- |
                                     \       lambda_0    /        \       lambda_0    / 
                     
                         */
@@ -486,16 +486,16 @@ namespace channels::cdl::response {
             const pdp::DelayProfileConfig& pdp_conf,
             const std::vector<float>& Phi
         ) {
-            // Compute cluster gain for LoS component
+            // Compute cluster gain for LoS component.
 
             const pdp::CDLCluster pdp_LoS_cluster = pdp_conf.Table[0];
             
-            // 7.5 Equation 7.5-13 for AoA and AoD (ray_offset = 0 for LoS)
+            // 7.5 Eq. 7.5-13 for AoA and AoD (ray_offset = 0 for LoS)
             // Also wrap AoA and AoD to [-180, 180]
             const float phi_AoA = WRAP_AZIMUTH_ANGLE_180(pdp_LoS_cluster.aoa_deg);
             const float phi_AoD = WRAP_AZIMUTH_ANGLE_180(pdp_LoS_cluster.aod_deg);
             
-            // 7.5 Equation 7.5-18 for ZoA and ZoD (ray_offset = 0 for LoS)
+            // 7.5 Eq. 7.5-18 for ZoA and ZoD (ray_offset = 0 for LoS)
             const float theta_ZoA = WRAP_ZENITH_ANGLE(pdp_LoS_cluster.zoa_deg);
             const float theta_ZoD = WRAP_ZENITH_ANGLE(pdp_LoS_cluster.zod_deg);
             
@@ -640,7 +640,7 @@ namespace channels::cdl::response {
                 norm_path_gain = 1.0f/std::sqrt(avg_path_gains);
             }
             
-            // Calculate the MONSTROUS Equation 7.5-28 excluding Doppler (the
+            // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
             los_gain_conf.Response.resize(numRx*numTx);
             std::complex<float>* h = los_gain_conf.Response.data();
@@ -728,12 +728,12 @@ namespace channels::cdl::response {
                         (thth): theta-theta, (thph): theta-phi
                         ksqrtinv: 1/sqrt(kappa)
 
-                    fieldTerms =
+                     fieldTerms =
 
-                             T
-                    [F_rx_th]   [exp(jPhi_thth)          ksqrinv*exp(jPhi_thph]   [F_tx_th]
-                    |       | * |                                             | * |       |
-                    [F_rx_ph]   [ksqrinv*exp(jPhi_phth)         exp(jPhi_phph)]   [F_rx_ph]
+                              T
+                     [F_rx_th]   [exp(jPhi_thth)          ksqrinv*exp(jPhi_thph]   [F_tx_th]
+                     |       | * |                                             | * |       |
+                     [F_rx_ph]   [ksqrinv*exp(jPhi_phth)         exp(jPhi_phph)]   [F_rx_ph]
                         
                     */
 
@@ -743,13 +743,13 @@ namespace channels::cdl::response {
                     const std::complex<float> sum_field_terms = (tmp01)*(*txft1) + (tmp23)*(*txft2);
 
                     /*
-                    Then, compute all the location terms combined. In 7.5-28, all the 
-                    location terms are combined as below (excluding Doppler term):
+                     Then, compute all the location terms combined. In 7.5-28, all the 
+                     location terms are combined as below (excluding Doppler term):
                     
-                                       T                            T
-                                /     r_rx*rx_dbar  \        /     r_tx*tx_dbar  \    
-                            exp| j2pi--------------- | * exp| j2pi--------------- |
-                                \       lambda_0    /        \       lambda_0    / 
+                                        T                            T
+                                 /     r_rx*rx_dbar  \        /     r_tx*tx_dbar  \    
+                             exp| j2pi--------------- | * exp| j2pi--------------- |
+                                 \       lambda_0    /        \       lambda_0    / 
                 
                     */
                     // No need to increment rxloc or txloc for LoS because it's the same for all ray
@@ -768,11 +768,13 @@ namespace channels::cdl::response {
         const PropagationCondition this_cluster_type
     ) {
         // Calculate polarization matrix for the specified cluster type
-        // The Phi (Angular interaction) is arranged like this:
-        // | theta-theta |
-        // |   phi-theta |
-        // | theta-phi   |
-        // |   phi-phi   |
+        /* 
+         The Phi (Angular interaction) is arranged like this:
+         | theta-theta |
+         |   phi-theta |
+         | theta-phi   |
+         |   phi-phi   |
+        */
         
         std::size_t num_cluster = all_cluster_type.size();
         std::size_t this_cluster_count = 0;

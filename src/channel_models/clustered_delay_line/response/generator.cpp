@@ -9,6 +9,8 @@ namespace channels::cdl::response {
     /***************** Function Implementations ********************/
     void generate_path_gains() {
 
+        
+
     }
 
     void generate_ofdm_response() {

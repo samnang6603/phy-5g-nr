@@ -11,7 +11,11 @@ namespace channels::cdl::mobility {
         float MaximumScattererSpeed = 5.0f;
         float MovingScattererProportion = 0.2f;
         std::vector<float> Speed;
-        std::vector<bool> States;
+        std::vector<uint8_t> States;
+        std::vector<float> LoSSpeed;
+        std::vector<uint8_t> LoSStates;
+        std::vector<float> NLoSSpeed;
+        std::vector<uint8_t> NLoSStates;
     };
 
     struct MobilityConfig {
@@ -27,6 +31,12 @@ namespace channels::cdl::mobility {
     };
 
     void compute_scatterer_variables(
+        MobilityConfig& mobility_conf,
+        RandomStreamConfig& randstream_conf,
+        const pdp::DelayProfileConfig& pdp_conf
+    );
+
+    void compute_scatterer_variables_los_nlos(
         MobilityConfig& mobility_conf,
         RandomStreamConfig& randstream_conf,
         const pdp::DelayProfileConfig& pdp_conf

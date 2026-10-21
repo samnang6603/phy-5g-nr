@@ -45,6 +45,7 @@ namespace channels::cdl {
         mobility::MobilityConfig& Mobility = config_.Mobility;
         response::StaticPathGainConfig& LoSStaticPathGain = config_.LoSStaticPathGain;
         response::StaticPathGainConfig& NLoSStaticPathGain = config_.NLoSStaticPathGain;
+        response::TimeVaryingPathGainConfig& TimeVaryingPathGain = config_.TimeVaryingPathGain;
 
         // Step 1: configure antenna structure
         antenna::geometry::initialize(AntennaSystem);
@@ -71,7 +72,7 @@ namespace channels::cdl {
         );
 
         // Step 6: initialize dual-mobility scatterer variables
-        mobility::compute_scatterer_variables(
+        mobility::compute_scatterer_variables_los_nlos(
             Mobility, 
             RandomStream, 
             DelayProfile
@@ -88,8 +89,20 @@ namespace channels::cdl {
             Phi
         );
 
-        std::cout << "Jobs done!" << std::endl;
         // Step 8: generate initial time-varying CDL channel
+        response::generate_time_varying_path_gains(
+            TimeVaryingPathGain, 
+            LoSStaticPathGain, 
+            NLoSStaticPathGain, 
+            DelayProfile, 
+            ChannelControl, 
+            AntennaSystem, 
+            Mobility
+        );
+
+        std::cout << "Jobs done!" << std::endl;
+
+
 
     }
 
