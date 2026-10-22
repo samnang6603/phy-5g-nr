@@ -9,7 +9,7 @@
 
 namespace channels::cdl {
 
-    class nrCDLChannel {
+    class Channel {
     public:
 
         struct Config {
@@ -18,29 +18,46 @@ namespace channels::cdl {
             antenna::AntennaSystemConfig AntennaSystem;
             RandomStreamConfig RandomStream;
             ChannelControlConfig ChannelControl;
-            response::StaticPathGainConfig LoSStaticPathGain;
-            response::StaticPathGainConfig NLoSStaticPathGain;
-            response::TimeVaryingPathGainConfig TimeVaryingPathGain;
+            response::PathGainConfig PathGain;
+            response::OFDMResponseConfig OFDMResponse;
         };
 
-        nrCDLChannel();
+        Channel();
 
-        explicit nrCDLChannel(const Config& config);
+        explicit Channel(const Config& config);
 
         const Config& config() const noexcept;
         
         void configure(const Config& config);
 
+        const std::vector<std::complex<float>>& operator()();
+
         void advance();
 
     private:
+
         void initializeChannel();
+
         static void validateOrThrow(const Config& config);
 
     private:
+
         Config config_;
+
+        // Random number generator
         std::mt19937 rng_;
+
+        // Simulation time
         float currentTime_ = 0.0f;
 
+        // Channel initialization state
+        bool initialized_state_ = false;
+
+        // Persistent channel realization variables
+        std::vector<float> initial_phase_;
+        std::vector<std::size_t> ray_coupling_;
+
+        // Reference to selected response vector
+        const std::vector<std::complex<float>> output_;
     };
 }

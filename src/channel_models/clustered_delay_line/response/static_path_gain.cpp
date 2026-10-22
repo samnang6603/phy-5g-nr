@@ -409,8 +409,8 @@ namespace channels::cdl::response {
 
             // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
-            nlos_gain_conf.Response.resize(total_nlos_samples*numRx*numTx);
-            std::complex<float>* h = nlos_gain_conf.Response.data();
+            nlos_gain_conf.RayResponse.resize(total_nlos_samples*numRx*numTx);
+            std::complex<float>* h = nlos_gain_conf.RayResponse.data();
             std::complex<float>* polterm_ptr;
             const std::size_t field_stride = NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
             
@@ -642,8 +642,8 @@ namespace channels::cdl::response {
             
             // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
-            los_gain_conf.Response.resize(numRx*numTx);
-            std::complex<float>* h = los_gain_conf.Response.data();
+            los_gain_conf.RayResponse.resize(numRx*numTx);
+            std::complex<float>* h = los_gain_conf.RayResponse.data();
             // This implmentation doesn't include matrix multiplication as in 7.5-28 but an expanded
             // vectorized version for optimization.
             // For this LoS, we really don't need to iterate across the rays, since all rays have uniform equal power.

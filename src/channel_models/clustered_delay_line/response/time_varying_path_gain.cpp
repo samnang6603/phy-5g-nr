@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <ranges>
 #include <variant>
 #include <vector>
 #include <array>
@@ -26,7 +25,7 @@ namespace channels::cdl::response {
         const antenna::AntennaSystemConfig& ant_sys_conf,
         const mobility::MobilityConfig& mobility_conf
     );
-
+    
     static DopplerTerm compute_doppler_term(
         const bool HasLoS,
         const std::vector<float>& time_vect,
@@ -52,8 +51,8 @@ namespace channels::cdl::response {
         const std::size_t num_samp_times = tv_gain_conf.TimeVector.size();
 
         const uint8_t has_los = static_cast<uint8_t>(pdp_conf.HasLoS);
-        const std::vector<std::complex<float>>& los_H_static = los_gain_conf.Response;
-        const std::vector<std::complex<float>>& nlos_H_static = nlos_gain_conf.Response;
+        const std::vector<std::complex<float>>& los_H_static = los_gain_conf.RayResponse;
+        const std::vector<std::complex<float>>& nlos_H_static = nlos_gain_conf.RayResponse;
 
         const DopplerTerm doppler_conf = compute_doppler_term(
             has_los,
@@ -67,25 +66,26 @@ namespace channels::cdl::response {
         const std::size_t numRx = ant_sys_conf.NumOutputSignals;
         const std::size_t numTx = ant_sys_conf.NumInputSignals;
         const std::size_t num_all_clusters = pdp_conf.ClusterTypes.size();
-        const std::size_t num_all_samples = num_all_clusters*NUM_RAYS_PER_CLUSTER;
         const std::size_t num_nlos_clusters = num_all_clusters - has_los;
-        const std::size_t num_nlos_samples = num_all_samples - NUM_RAYS_PER_CLUSTER;
-        const std::size_t num_nlos_gain_samples = num_nlos_samples*numRx*numTx;
-        const std::complex<float>* nlos_dp = doppler_conf.nlos_term.data();
+        const std::size_t num_nlos_samples = num_nlos_clusters*NUM_RAYS_PER_CLUSTER;
+        const std::size_t num_nlos_tx_gain_samples = num_nlos_samples*numTx;
+        const std::size_t num_nlos_cluster_samp_time = num_samp_times*num_nlos_clusters;
         const std::vector<std::complex<float>>& los_dp_term = doppler_conf.los_term;
         const std::vector<std::complex<float>>& nlos_dp_term = doppler_conf.nlos_term;
-        
 
-        std::vector<std::complex<float>> H(num_samp_times*num_all_clusters*numTx*numRx);
-        std::complex<float>* h = H.data();
-        // Minus num_samp_times to reset the h ptr back to the 0th sample for next stride
-        const std::size_t los_h_stride = num_all_clusters*num_samp_times - num_samp_times;
+        // Unified contiguous buffer for the time-varying channel gain
+        std::vector<std::complex<float>>& H = tv_gain_conf.ClusterResponse;
+        H.resize(num_samp_times*num_all_clusters*numTx*numRx);
+        std::complex<float>* h;
+        std::vector<std::complex<float>> ray_accum(num_samp_times); // ray accumulation (summation)
 
-        std::vector<std::complex<float>> H2(num_samp_times*num_all_clusters*NUM_RAYS_PER_CLUSTER*numTx*numRx);
-        std::complex<float>* h2 = H2.data();
-
+#if 0
         // Combine static and doppler term to produce time-varying channel
         if (pdp_conf.HasLoS) {
+
+            // If delay profile contains LoS. Process LoS time-varying gains first, then do NLoS.
+            // Both processes use the same flat buffer H and interleave the time-varying gains into
+            // its appropriate indices.
 
             // LoS component processing
             for (std::size_t u = 0; u < numRx; ++u ) {
@@ -96,32 +96,33 @@ namespace channels::cdl::response {
                     for (std::size_t t = 0; t < num_samp_times; ++t) {
                         *h++ = gain*los_dp_term[t];
                     }
+
                     h += los_h_stride;
                 }
             }
 
             // reset h ptr to beginning of nlos samples
-            std::vector<std::size_t> ss;
             h = H.data() + num_samp_times;
-            std::vector<std::complex<float>> ray_accum(num_samp_times);
 
+            // NLoS components processing
             for (std::size_t u = 0; u < numRx; ++u ) {
 
-                std::size_t u_stride = u*num_nlos_samples*numTx;
+                std::size_t u_stride = u*num_nlos_tx_gain_samples;
                 for (std::size_t s = 0; s < numTx; ++s) {
 
                     std::size_t s_stride = s*num_nlos_samples;
+                    std::size_t us_stride = s_stride + u_stride;
                     for (std::size_t i = 0; i < num_nlos_clusters; ++i) {
 
                         for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
                             std::size_t m_stride = m*num_nlos_clusters;
-                            const std::size_t doppler_base_idx = num_nlos_clusters*num_samp_times*m + i*num_samp_times;
-                            std::size_t sg_base_idx_2 = u_stride + s_stride + m_stride + i;
-                            const std::complex<float> gain = nlos_H_static[sg_base_idx_2];
+                            const std::size_t doppler_base_idx = num_nlos_cluster_samp_time*m + i*num_samp_times;
+                            std::size_t sg_idx = us_stride + m_stride + i;
+                            const std::complex<float> gain = nlos_H_static[sg_idx];
 
                             for (std::size_t t = 0; t < num_samp_times; ++t) {
-                                const std::complex<float> C = gain*nlos_dp_term[doppler_base_idx + t];
-                                ray_accum[t] += C;
+                                const std::complex<float> c = gain*nlos_dp_term[doppler_base_idx + t];
+                                ray_accum[t] += c;
                             }
                         }
 
@@ -131,28 +132,8 @@ namespace channels::cdl::response {
                             ray_accum[t] = {0.0f, 0.0f}; // reset ray accumlation
                         }
                     }
+
                     h += num_samp_times; // offset ptr by num_samp_times
-
-/*
-                    for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
-
-                        std::complex<float> ray_accum = 0;
-
-                        for (std::size_t i = 0; i < num_nlos_clusters; ++i) {
-                            const std::size_t cluster_per_ray = m*num_nlos_clusters;
-                            const std::size_t doppler_base_idx = i*num_samp_times + cluster_per_ray;
-                            const std::size_t sg_base_idx = u*numTx + s + cluster_per_ray + i;
-                            const std::complex<float> gain = nlos_H_static[sg_base_idx];
-
-                            for (std::size_t t = 0; t < num_samp_times; ++t) {
-
-                                *h++ += gain*nlos_dp_term[doppler_base_idx + t];
-
-                            }
-                        }
-
-                    }
-                        */
                 }
             }
 
@@ -160,8 +141,95 @@ namespace channels::cdl::response {
 
         } else {
 
-        }
+            // If no LoS present, then only process NLoS components
+            for (std::size_t u = 0; u < numRx; ++u ) {
 
+                std::size_t u_stride = u*num_nlos_tx_gain_samples;
+                for (std::size_t s = 0; s < numTx; ++s) {
+
+                    std::size_t s_stride = s*num_nlos_samples;
+                    std::size_t us_stride = s_stride + u_stride;
+                    for (std::size_t i = 0; i < num_nlos_clusters; ++i) {
+
+                        for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
+                            std::size_t m_stride = m*num_nlos_clusters;
+                            const std::size_t doppler_base_idx = num_nlos_cluster_samp_time*m + i*num_samp_times;
+                            std::size_t sg_idx = us_stride + m_stride + i;
+                            const std::complex<float> gain = nlos_H_static[sg_idx];
+
+                            for (std::size_t t = 0; t < num_samp_times; ++t) {
+                                const std::complex<float> c = gain*nlos_dp_term[doppler_base_idx + t];
+                                ray_accum[t] += c;
+                            }
+                        }
+
+                        // Load the accumulated rays into H array
+                        for (std::size_t t = 0; t < num_samp_times; ++t) {
+                            *h++ = ray_accum[t];
+                            ray_accum[t] = {0.0f, 0.0f}; // reset ray accumlation
+                        }
+                    }
+                }
+            }
+        }
+#else 
+        // Combine static and doppler term to produce time-varying channel
+        if (pdp_conf.HasLoS) {
+
+            // If delay profile contains LoS. Process LoS time-varying gains first, then do NLoS.
+            // Both processes use the same flat buffer H and interleave the time-varying gains into
+            // its appropriate indices.
+            const std::size_t samples_per_pair = num_all_clusters*num_samp_times;
+
+            // LoS component processing
+            for (std::size_t u = 0; u < numRx; ++u ) {
+
+                for (std::size_t s = 0; s < numTx; ++s) {
+                    const std::complex<float> gain = los_H_static[u*numTx + s];
+
+                    h = H.data() + (u*numTx + s)*samples_per_pair;
+
+                    for (std::size_t t = 0; t < num_samp_times; ++t) {
+                        *h++ = gain*los_dp_term[t];
+                    }
+                }
+            }
+        }
+        
+        // If no LoS present, then only process NLoS components
+        const std::size_t samples_per_pair = (num_nlos_clusters + has_los)*num_samp_times;
+        const std::size_t has_los_num_samp_times = has_los*num_samp_times;
+        for (std::size_t u = 0; u < numRx; ++u ) {
+
+            const std::size_t u_stride = u*num_nlos_tx_gain_samples;
+            for (std::size_t s = 0; s < numTx; ++s) {
+
+                const std::size_t s_stride = s*num_nlos_samples;
+                const std::size_t us_stride = s_stride + u_stride;
+                h = H.data() + (u*numTx + s)*samples_per_pair + has_los_num_samp_times;
+                for (std::size_t i = 0; i < num_nlos_clusters; ++i) {
+
+                    for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
+                        const std::size_t m_stride = m*num_nlos_clusters;
+                        const std::size_t doppler_base_idx = num_nlos_cluster_samp_time*m + i*num_samp_times;
+                        const std::size_t sg_idx = us_stride + m_stride + i;
+                        const std::complex<float> gain = nlos_H_static[sg_idx];
+
+                        for (std::size_t t = 0; t < num_samp_times; ++t) {
+                            const std::complex<float> c = gain*nlos_dp_term[doppler_base_idx + t];
+                            ray_accum[t] += c;
+                        }
+                    }
+
+                    // Load the accumulated rays into the unified H array
+                    for (std::size_t t = 0; t < num_samp_times; ++t) {
+                        *h++ = ray_accum[t];
+                        ray_accum[t] = {0.0f, 0.0f}; // reset ray accumlation
+                    }
+                }
+            }
+        }
+#endif
     }
 
     static std::vector<float> get_sample_times(
@@ -173,7 +241,6 @@ namespace channels::cdl::response {
         // cofficient generation sampling rate F_cg.
 
         const mobility::ScattererConfig& scatterer_conf = mobility_conf.Scatterer;
-        const float fc = ant_sys_conf.CarrierFrequency;
         const float time_offset = channel_ctrl_conf.CurrentTime;
         const bool is_max_doppler_scalar = std::holds_alternative<float>(mobility_conf.MaximumDopplerShift);
 
@@ -191,7 +258,6 @@ namespace channels::cdl::response {
         }
 
         const float fs = channel_ctrl_conf.SampleRate;
-        const float samp_density = channel_ctrl_conf.SampleDensity;
         const std::uint64_t num_wf_samp = channel_ctrl_conf.NumTimeSamples;
         const float lambda_0 = ant_sys_conf.Wavelength();
 

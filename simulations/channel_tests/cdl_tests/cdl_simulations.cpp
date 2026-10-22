@@ -7,7 +7,7 @@ namespace channels::cdl {
 
     void runSimulation1(void) {
 
-        nrCDLChannel::Config cfg;
+        Channel::Config cfg;
 
         /******************* Predefined Delay Profile ************************/ 
         cfg.DelayProfile.ProfileName = pdp::PDP::CDL_D;
@@ -84,18 +84,19 @@ namespace channels::cdl {
         rx.FieldPattern.FieldEffect.PolarizationModel = antenna::field_pattern::PolarizationModelOption::MODEL2;
 
         /******************* Construct Channel Object ************************/ 
-        //nrCDLChannel cdl;
+        //Channel cdl;
         //cdl.configure(cfg); 
         // OR
 #if CPU_BENCHMARK
     auto start = std::chrono::steady_clock::now();
 #endif
-        nrCDLChannel cdl{cfg};
+        Channel cdl{cfg};
+        const auto& H = cdl();
 #if CPU_BENCHMARK
     auto stop = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration<float, std::milli>(stop - start).count();
-    std::cout << "[BENCHMARK] nrCDLChannel() instantiation duration: " << duration << " ms" << std::endl;
-#endif    
+    std::cout << "[BENCHMARK] Channel() instantiation duration: " << duration << " ms" << std::endl;
+#endif
 
 
     }

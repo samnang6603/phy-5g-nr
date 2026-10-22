@@ -100,10 +100,8 @@ namespace channels::cdl::mobility {
         uint8_t* stp = nlos_states.data();
         float* svp = nlos_speed.data();
 
-        int c = 0;
-
         // This implementation is weird because it's (for now) intended to match MATLAB golden model
-        // nrCDLChannel() bit-exact. As soon as work is done and all cases are corrected, a simpler implementation
+        // Channel() bit-exact. As soon as work is done and all cases are corrected, a simpler implementation
         // (no skipping voiding output just to consume random stream) can be applied.
         if (pdp_conf.HasLoS) {
 
@@ -117,7 +115,7 @@ namespace channels::cdl::mobility {
 
                 // Store the remaining M-1 samples
                 for (std::size_t l = 0; l < L1; ++l) {
-                    ++c;
+
                     *stp++ = static_cast<uint8_t>(randomStream.rand() < p);
                 }
             } 
@@ -125,7 +123,6 @@ namespace channels::cdl::mobility {
             // Generate RV D (size [N M]) between -v_scatt to v_scatt
             // randD is (0,1) so (0,1)*2-1 = (-1,1). (-1,1)*v_scatt = (-v_scatt,v_scatt)
             if (v_scatt) {
-
                 for (std::size_t m = 0; m < M; ++m) {
 
                 // Consume the first sample of this column
@@ -143,7 +140,6 @@ namespace channels::cdl::mobility {
         } else {
 
             for (std::size_t m = 0; m < M; ++m) {
-
                 for (std::size_t l = 0; l < L; ++l) {
                     *stp++ = static_cast<uint8_t>(randomStream.rand() < p);
                 }
@@ -152,13 +148,10 @@ namespace channels::cdl::mobility {
             // Generate RV D (size [N M]) between -v_scatt to v_scatt
             // randD is (0,1) so (0,1)*2-1 = (-1,1). (-1,1)*v_scatt = (-v_scatt,v_scatt)
             if (v_scatt) {
-
                 for (std::size_t m = 0; m < M; ++m) {
 
                     for (std::size_t l = 0; l < L; ++l) {
-
                         *svp++ = static_cast<float>(randomStream.rand()*2 - 1)*v_scatt;
-
                     }
                 } 
             }

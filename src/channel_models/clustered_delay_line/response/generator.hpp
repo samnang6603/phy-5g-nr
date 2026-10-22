@@ -17,19 +17,24 @@ constexpr std::array<float, NUM_RAYS_PER_CLUSTER> RAY_OFFSET_ALPHA = {
 namespace channels::cdl::response {
 
     struct StaticPathGainConfig {
-        std::vector<std::complex<float>> Response;
+        std::vector<std::complex<float>> RayResponse;
         std::vector<float> TxSphericalUnitVector;
         std::vector<float> RxSphericalUnitVector;
     };
 
     struct TimeVaryingPathGainConfig {
-        std::vector<std::complex<float>> Response;
+        std::vector<std::complex<float>> ClusterResponse;
         std::vector<float> TimeVector;
     };
 
     struct PathGainConfig {
-        StaticPathGainConfig StaticGain;
+        StaticPathGainConfig LoSStaticGain;
+        StaticPathGainConfig NLoSStaticGain;
         TimeVaryingPathGainConfig TimeVaryingGain;
+    };
+
+    struct OFDMResponseConfig {
+        std::vector<std::complex<float>> Response;
     };
 
     void generate_static_path_gains(
@@ -52,6 +57,15 @@ namespace channels::cdl::response {
         const mobility::MobilityConfig& mobility_conf
     );
 
-    //void generate_ofdm_response();
-    //void generate();
+    std::vector<std::complex<float>>& generate_response_output(
+        PathGainConfig& path_gain_conf,
+        OFDMResponseConfig& ofdm_response_conf,
+        const ChannelControlConfig& channel_ctrl_conf,
+        const pdp::DelayProfileConfig& pdp_conf,
+        const antenna::AntennaSystemConfig& ant_sys_conf,
+        const mobility::MobilityConfig& mobility_conf
+    );
+
+
+    
 }
