@@ -63,19 +63,19 @@ namespace channels::cdl::response {
             mobility_conf
         );
 
-        const std::size_t numRx = ant_sys_conf.NumOutputSignals;
-        const std::size_t numTx = ant_sys_conf.NumInputSignals;
+        const std::size_t num_Rx = ant_sys_conf.NumOutputSignals;
+        const std::size_t num_Tx = ant_sys_conf.NumInputSignals;
         const std::size_t num_all_clusters = pdp_conf.ClusterTypes.size();
         const std::size_t num_nlos_clusters = num_all_clusters - has_los;
         const std::size_t num_nlos_samples = num_nlos_clusters*NUM_RAYS_PER_CLUSTER;
-        const std::size_t num_nlos_tx_gain_samples = num_nlos_samples*numTx;
+        const std::size_t num_nlos_tx_gain_samples = num_nlos_samples*num_Tx;
         const std::size_t num_nlos_cluster_samp_time = num_samp_times*num_nlos_clusters;
         const std::vector<std::complex<float>>& los_dp_term = doppler_conf.los_term;
         const std::vector<std::complex<float>>& nlos_dp_term = doppler_conf.nlos_term;
 
         // Unified contiguous buffer for the time-varying channel gain
         std::vector<std::complex<float>>& H = tv_gain_conf.ClusterResponse;
-        H.resize(num_samp_times*num_all_clusters*numTx*numRx);
+        H.resize(num_samp_times*num_all_clusters*num_Tx*num_Rx);
         std::complex<float>* h;
         std::vector<std::complex<float>> ray_accum(num_samp_times); // ray accumulation (summation)
 
@@ -88,10 +88,10 @@ namespace channels::cdl::response {
             // its appropriate indices.
 
             // LoS component processing
-            for (std::size_t u = 0; u < numRx; ++u ) {
+            for (std::size_t u = 0; u < num_Rx; ++u ) {
 
-                for (std::size_t s = 0; s < numTx; ++s) {
-                    const std::complex<float> gain = los_H_static[u*numTx + s];
+                for (std::size_t s = 0; s < num_Tx; ++s) {
+                    const std::complex<float> gain = los_H_static[u*num_Tx + s];
 
                     for (std::size_t t = 0; t < num_samp_times; ++t) {
                         *h++ = gain*los_dp_term[t];
@@ -105,10 +105,10 @@ namespace channels::cdl::response {
             h = H.data() + num_samp_times;
 
             // NLoS components processing
-            for (std::size_t u = 0; u < numRx; ++u ) {
+            for (std::size_t u = 0; u < num_Rx; ++u ) {
 
                 std::size_t u_stride = u*num_nlos_tx_gain_samples;
-                for (std::size_t s = 0; s < numTx; ++s) {
+                for (std::size_t s = 0; s < num_Tx; ++s) {
 
                     std::size_t s_stride = s*num_nlos_samples;
                     std::size_t us_stride = s_stride + u_stride;
@@ -142,10 +142,10 @@ namespace channels::cdl::response {
         } else {
 
             // If no LoS present, then only process NLoS components
-            for (std::size_t u = 0; u < numRx; ++u ) {
+            for (std::size_t u = 0; u < num_Rx; ++u ) {
 
                 std::size_t u_stride = u*num_nlos_tx_gain_samples;
-                for (std::size_t s = 0; s < numTx; ++s) {
+                for (std::size_t s = 0; s < num_Tx; ++s) {
 
                     std::size_t s_stride = s*num_nlos_samples;
                     std::size_t us_stride = s_stride + u_stride;
@@ -182,12 +182,12 @@ namespace channels::cdl::response {
             const std::size_t samples_per_pair = num_all_clusters*num_samp_times;
 
             // LoS component processing
-            for (std::size_t u = 0; u < numRx; ++u ) {
+            for (std::size_t u = 0; u < num_Rx; ++u ) {
 
-                for (std::size_t s = 0; s < numTx; ++s) {
-                    const std::complex<float> gain = los_H_static[u*numTx + s];
+                for (std::size_t s = 0; s < num_Tx; ++s) {
+                    const std::complex<float> gain = los_H_static[u*num_Tx + s];
 
-                    h = H.data() + (u*numTx + s)*samples_per_pair;
+                    h = H.data() + (u*num_Tx + s)*samples_per_pair;
 
                     for (std::size_t t = 0; t < num_samp_times; ++t) {
                         *h++ = gain*los_dp_term[t];
@@ -199,14 +199,14 @@ namespace channels::cdl::response {
         // If no LoS present, then only process NLoS components
         const std::size_t samples_per_pair = (num_nlos_clusters + has_los)*num_samp_times;
         const std::size_t has_los_num_samp_times = has_los*num_samp_times;
-        for (std::size_t u = 0; u < numRx; ++u ) {
+        for (std::size_t u = 0; u < num_Rx; ++u ) {
 
             const std::size_t u_stride = u*num_nlos_tx_gain_samples;
-            for (std::size_t s = 0; s < numTx; ++s) {
+            for (std::size_t s = 0; s < num_Tx; ++s) {
 
                 const std::size_t s_stride = s*num_nlos_samples;
                 const std::size_t us_stride = s_stride + u_stride;
-                h = H.data() + (u*numTx + s)*samples_per_pair + has_los_num_samp_times;
+                h = H.data() + (u*num_Tx + s)*samples_per_pair + has_los_num_samp_times;
                 for (std::size_t i = 0; i < num_nlos_clusters; ++i) {
 
                     for (std::size_t m = 0; m < NUM_RAYS_PER_CLUSTER; ++m) {
@@ -290,10 +290,8 @@ namespace channels::cdl::response {
 
         // Calculate time vectors at F_cg
         std::vector<float> time_vect(num_time_pts);
-        if (num_time_pts > 1) {
-            for (std::size_t i = 0; i < num_time_pts; ++i) {
-                time_vect[i] = i*F_cg_inv + time_offset;
-            }
+        for (std::size_t i = 0; i < num_time_pts; ++i) {
+            time_vect[i] = i*F_cg_inv + time_offset;
         }
         return time_vect;
     }

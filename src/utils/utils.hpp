@@ -26,6 +26,7 @@ constexpr float POW2DB(float x) {
 constexpr float DB2POW(float x) {
     return std::pow(10.0f,x*0.1f);
 }
+constexpr std::size_t BESSELI0_FLOAT64_TERM = 20;
 
 namespace utils {
 
@@ -82,7 +83,9 @@ namespace utils {
 
     namespace float_arithmetic {
 
-        float calculateMeans(std::vector<float> x);
+        float calculateMeans(const std::vector<float> x);
+        float besselI0(const float x);
+        float dot(const float* a, const float* b, const std::size_t len);
 
     }
 }

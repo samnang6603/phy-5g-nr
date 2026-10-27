@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstddef>
 #include "cdl_simulations.hpp"
 
 #define CPU_BENCHMARK 1
@@ -20,6 +21,8 @@ namespace channels::cdl {
         //   nullopt         -> angle scaling disabled
         //   MeanAnglesList  -> angle scaling enabled
         cfg.DelayProfile.MeanAngles = std::nullopt;
+
+        cfg.ChannelControl.SampleRate = 15360000.0f;
 
         /******************* Transmit Antenna Array ************************/ 
         auto& tx = cfg.AntennaSystem.TransmitAntennaArray;
@@ -82,6 +85,9 @@ namespace channels::cdl {
 
         // MATLAB: antRx_struct.PolarizationModel = 'Model-2';
         rx.FieldPattern.FieldEffect.PolarizationModel = antenna::field_pattern::PolarizationModelOption::MODEL2;
+
+        // Output type
+        cfg.ChannelControl.ChannelResponseOutput = ChannelResponseOutputType::OFDM_RESPONSE;
 
         /******************* Construct Channel Object ************************/ 
         //Channel cdl;

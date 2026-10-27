@@ -86,15 +86,15 @@ namespace channels::cdl::response {
     ) {
         // Generate static cdl path gains without Doppler effect
 
-        const std::size_t numTx = ant_sys_conf.NumInputSignals;
-        const std::size_t numRx = ant_sys_conf.NumOutputSignals;
+        const std::size_t num_Tx = ant_sys_conf.NumInputSignals;
+        const std::size_t num_Rx = ant_sys_conf.NumOutputSignals;
         const bool hasLoS = pdp_conf.HasLoS;
 
         DimConfig D{1,
                     1,
                     NUM_RAYS_PER_CLUSTER,
-                    numTx,
-                    numRx,                    
+                    num_Tx,
+                    num_Rx,                    
                 };
 
         if (hasLoS) {
@@ -271,12 +271,12 @@ namespace channels::cdl::response {
             }
 
             // Allocation for Tx field term and location term
-            const std::size_t numTx = ant_sys_conf.NumInputSignals;
-            const std::size_t tx_term_size = numTx*num_nlos_cluster*NUM_RAYS_PER_CLUSTER;
+            const std::size_t num_Tx = ant_sys_conf.NumInputSignals;
+            const std::size_t tx_term_size = num_Tx*num_nlos_cluster*NUM_RAYS_PER_CLUSTER;
             std::vector<float> tx_field_term(tx_term_size*NUM_FIELD_SPHERICAL_ANGLES);
             std::vector<std::complex<float>> tx_loc_term(tx_term_size);
 
-            for (std::size_t s = 0; s < numTx; ++s) {
+            for (std::size_t s = 0; s < num_Tx; ++s) {
 
                 float* field_term = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
 
@@ -323,12 +323,12 @@ namespace channels::cdl::response {
             }
 
             // Allocation for Tx field term and location term
-            const std::size_t numRx = ant_sys_conf.NumOutputSignals;
-            const std::size_t rx_term_size = numRx*num_nlos_cluster*NUM_RAYS_PER_CLUSTER;
+            const std::size_t num_Rx = ant_sys_conf.NumOutputSignals;
+            const std::size_t rx_term_size = num_Rx*num_nlos_cluster*NUM_RAYS_PER_CLUSTER;
             std::vector<float> rx_field_term(rx_term_size*NUM_FIELD_SPHERICAL_ANGLES);
             std::vector<std::complex<float>> rx_loc_term(rx_term_size);
 
-            for (std::size_t u = 0; u < numRx; ++u) {
+            for (std::size_t u = 0; u < num_Rx; ++u) {
 
                 float* field_term = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
 
@@ -362,7 +362,7 @@ namespace channels::cdl::response {
             );
 
             // Calculate output normalization gain
-            const float norm_output = channel_ctrl_conf.NormalizeChannelOutput ? 1.0f/std::sqrt(numRx) : 1.0f;
+            const float norm_output = channel_ctrl_conf.NormalizeChannelOutput ? 1.0f/std::sqrt(num_Rx) : 1.0f;
 
             // Get active ray
             // TODO: find out if finding active ray is truly needed once more features are added like subclustering
@@ -409,17 +409,17 @@ namespace channels::cdl::response {
 
             // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
-            nlos_gain_conf.RayResponse.resize(total_nlos_samples*numRx*numTx);
+            nlos_gain_conf.RayResponse.resize(total_nlos_samples*num_Rx*num_Tx);
             std::complex<float>* h = nlos_gain_conf.RayResponse.data();
             std::complex<float>* polterm_ptr;
             const std::size_t field_stride = NUM_FIELD_SPHERICAL_ANGLES*total_nlos_samples;
             
-            for (std::size_t u = 0; u < numRx; ++u) {
+            for (std::size_t u = 0; u < num_Rx; ++u) {
 
                 const float* rxft_base = rx_field_term.data() + u*field_stride;
                 const std::complex<float>* rxloc_base = rx_loc_term.data() + u * total_nlos_samples;
 
-                for (std::size_t s = 0; s < numTx; ++s) {
+                for (std::size_t s = 0; s < num_Tx; ++s) {
 
                     // Reset to the beginning of this receiver's data
                     const float* rxft = rxft_base;
@@ -529,12 +529,12 @@ namespace channels::cdl::response {
             }
             
             // Allocation for Tx field term and location term
-            const std::size_t numTx = ant_sys_conf.NumInputSignals;
-            std::vector<float> tx_field_term(numTx*NUM_FIELD_SPHERICAL_ANGLES);
-            std::vector<std::complex<float>> tx_loc_term(numTx*NUM_RAYS_PER_CLUSTER);
+            const std::size_t num_Tx = ant_sys_conf.NumInputSignals;
+            std::vector<float> tx_field_term(num_Tx*NUM_FIELD_SPHERICAL_ANGLES);
+            std::vector<std::complex<float>> tx_loc_term(num_Tx*NUM_RAYS_PER_CLUSTER);
 
             // Compute field and location terms
-            for (std::size_t s = 0; s < numTx; ++s) {
+            for (std::size_t s = 0; s < num_Tx; ++s) {
 
                 float* field_term = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES;
 
@@ -582,12 +582,12 @@ namespace channels::cdl::response {
             }
 
             // Allocation for Tx field term and location term
-            const std::size_t numRx = ant_sys_conf.NumOutputSignals;
-            std::vector<float> rx_field_term(numRx*NUM_FIELD_SPHERICAL_ANGLES);
-            std::vector<std::complex<float>> rx_loc_term(numRx*NUM_RAYS_PER_CLUSTER);
+            const std::size_t num_Rx = ant_sys_conf.NumOutputSignals;
+            std::vector<float> rx_field_term(num_Rx*NUM_FIELD_SPHERICAL_ANGLES);
+            std::vector<std::complex<float>> rx_loc_term(num_Rx*NUM_RAYS_PER_CLUSTER);
 
             // Compute field and location terms
-            for (std::size_t u = 0; u < numRx; ++u) {
+            for (std::size_t u = 0; u < num_Rx; ++u) {
 
                 float* field_term = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES;
 
@@ -620,7 +620,7 @@ namespace channels::cdl::response {
             );
 
             // Calculate output normalization gain
-            const float norm_output = channel_ctrl_conf.NormalizeChannelOutput ? 1.0f/std::sqrt(numRx) : 1.0f;
+            const float norm_output = channel_ctrl_conf.NormalizeChannelOutput ? 1.0f/std::sqrt(num_Rx) : 1.0f;
 
             // Get active ray and gain scaling
             // LoS active ray is always 1
@@ -642,7 +642,7 @@ namespace channels::cdl::response {
             
             // Calculate the MONSTROUS Eq. 7.5-28 excluding Doppler (the
             // last term). Doppler is to be calculated in time-varying channel response
-            los_gain_conf.RayResponse.resize(numRx*numTx);
+            los_gain_conf.RayResponse.resize(num_Rx*num_Tx);
             std::complex<float>* h = los_gain_conf.RayResponse.data();
             // This implmentation doesn't include matrix multiplication as in 7.5-28 but an expanded
             // vectorized version for optimization.
@@ -650,13 +650,13 @@ namespace channels::cdl::response {
             // All it matters are the polarization matrix (polterm)
 
 #if 0
-            for (std::size_t s = 0; s < numTx; ++s) {
+            for (std::size_t s = 0; s < num_Tx; ++s) {
 
                 const float* txft1 = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES; // F_theta
                 const float* txft2 = txft1 + 1; // F_phi
                 const std::complex<float>* txloc = tx_loc_term.data() + s*NUM_RAYS_PER_CLUSTER;
 
-                for (std::size_t u = 0; u < numRx; ++u) {
+                for (std::size_t u = 0; u < num_Rx; ++u) {
 
                     const float* rxft1 = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES; // F_theta
                     const float* rxft2 = rxft1 + 1; // F_phi
@@ -703,7 +703,7 @@ namespace channels::cdl::response {
                 }
             }
 #else
-            for (std::size_t u = 0; u < numRx; ++u) {
+            for (std::size_t u = 0; u < num_Rx; ++u) {
 
                 const float* rxft1 = rx_field_term.data() + u*NUM_FIELD_SPHERICAL_ANGLES; // F_theta
                 const float* rxft2 = rxft1 + 1; // F_phi
@@ -717,7 +717,7 @@ namespace channels::cdl::response {
                 const std::complex<float> tmp23 = tmp2 + tmp3;
                 const std::complex<float> rxloc_scaled = (*rxloc)*ksqrtinv;
 
-                for (std::size_t s = 0; s < numTx; ++s) {
+                for (std::size_t s = 0; s < num_Tx; ++s) {
 
                     const float* txft1 = tx_field_term.data() + s*NUM_FIELD_SPHERICAL_ANGLES; // F_theta
                     const float* txft2 = txft1 + 1; // F_phi

@@ -47,10 +47,16 @@ namespace channels::cdl::response {
 
             case ChannelResponseOutputType::OFDM_RESPONSE: {
 
-                throw std::logic_error(
-                    "OFDM response generation is not implemented."
-                ); 
-                //generate_ofdm_response();
+                //throw std::logic_error(
+                //    "OFDM response generation is not implemented."
+                //); 
+                generate_ofdm_response(
+                    ofdm_response_conf,
+                    path_gain_conf.TimeVaryingGain,
+                    pdp_conf,
+                    ant_sys_conf,
+                    channel_ctrl_conf
+                );
                 
             }
 
